@@ -34,15 +34,22 @@ def list_memories(principal: CurrentPrincipal) -> list[MemoryCard]:
 
 @router.get("/search", response_model=MemorySearchResult)
 def search_memories(q: str, principal: CurrentPrincipal) -> MemorySearchResult:
-    """The same scoped search as recall, for the caller's team. Also used by the voice agent (metadata only)."""
-    raise _todo("P2-5")
+    """The same scoped search as recall, for the caller's team (metadata-only cards).
+    `filter` is the exact pre-filter that ran inside $vectorSearch, printed in the Fence view."""
+    s = store()
+    cards = s.search(principal, q)
+    return MemorySearchResult(query=q, team_id=principal.team_id, count=len(cards), memories=cards,
+                              filter=s.printable_scope(principal))
 
 
 @router.get("/compare-unscoped", response_model=MemorySearchResult)
 def compare_unscoped(q: str, principal: AdminPrincipal) -> MemorySearchResult:
     """Admin only, for the Fence view: what the search WOULD return without the team filter.
-    Never given to the agent or the voice agent."""
-    raise _todo("P2-5")
+    Other teams' memories come back redacted (owner and match only). Never given to the agent."""
+    s = store()
+    cards = s.unscoped_cards(principal, q)
+    shown = {k: v for k, v in s.printable_scope(principal).items() if k != "readableBy"}
+    return MemorySearchResult(query=q, team_id=principal.team_id, count=len(cards), memories=cards, filter=shown)
 
 
 @router.get("/{memory_id}", response_model=MemoryCard)
@@ -67,10 +74,23 @@ def correct_memory(memory_id: str, body: CorrectBody, principal: AdminPrincipal)
 
 @router.post("/{memory_id}/expire", response_model=MemoryCard)
 def expire_memory(memory_id: str, body: ReasonBody, principal: AdminPrincipal) -> MemoryCard:
-    raise _todo("P2-6")
+    """Expire now (admin of the owner team, reason required). Recall stops returning it immediately."""
+    return _admin(lambda: store().expire_now(principal, memory_id, body.reason))
 
 
 @router.delete("/{memory_id}", response_model=MemoryCard)
 def forget_memory(memory_id: str, body: ReasonBody, principal: AdminPrincipal) -> MemoryCard:
-    """Forget: hard delete plus tombstone. Returns the grey "Forgotten" card (content erased)."""
-    raise _todo("P2-6")
+    """Forget: hard delete of every version plus a content-free tombstone (admin of the owner team,
+    reason required). Returns the grey "Forgotten" card (content erased)."""
+    return _admin(lambda: store().forget(principal, memory_id, body.reason))
+
+
+def _admin(action):
+    try:
+        return action()
+    except LookupError:  # same answer as "doesn't exist", so other teams can't probe ids
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No memory with that id for your team.") from None
+    except PermissionError as e:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(e)) from None
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from None

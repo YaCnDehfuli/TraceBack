@@ -1,7 +1,7 @@
 """AtlasMemoryStore: the real MemoryStore (contracts/interfaces.py). The only code that writes memories.
 
-Done: promote, is_searchable, recall, search, unscoped_search (P2-2); record_use (P2-6).
-Still to do: forget, expire (P2-6); correct (P2-7).
+Done: promote, is_searchable, recall, search, unscoped_search (P2-2, P2-5); record_use, forget,
+expire_now (P2-6). Still to do: correct (P2-7).
 
 Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 - recall: $vectorSearch pre-filter on tenantId, readableBy, status="active", expiresAt > now,
@@ -37,6 +37,7 @@ from contracts.models import (
     Observations,
     Principal,
     Proof,
+    Tombstone,
     VerificationResult,
 )
 from core.clock import new_id, utc_now
@@ -353,13 +354,92 @@ class AtlasMemoryStore:
         return [self.to_card(doc) for doc in docs]
 
     def unscoped_search(self, principal: Principal, q: str, k: int = 5) -> list[dict]:
-        """Fence comparison only: the same search WITHOUT tenantId/readableBy. Admin only, never given
-        to the agent or the voice agent. Returns id, owner team and score only, never content."""
-        filt = {"status": "active", "expiresAt": {"$gt": utc_now()}, "embeddingVersion": EMBEDDING_VERSION}
+        """Fence comparison only: the same search WITHOUT the team filter (readableBy). The tenant filter
+        stays, so it can never reach another company. Admin only, never given to the agent.
+        Returns id, owner team and score only, never content."""
+        filt = {"tenantId": principal.tenant_id, "status": "active", "expiresAt": {"$gt": utc_now()},
+                "embeddingVersion": EMBEDDING_VERSION}
         hits = [h for h in self._vector(embed_one(q, "query"), filt, limit=k) if h["score"] >= MIN_SCORE]
         audit.log(self.db, tenant_id=principal.tenant_id, event="unscoped_compared", actor=_actor(principal),
                   details={"memoryIds": [h["_id"] for h in hits]})
         return hits
+
+    def unscoped_cards(self, principal: Principal, q: str, k: int = 5) -> list[MemoryCard]:
+        """unscoped_search as cards. Memories the caller's team may NOT read are redacted: owner, status
+        and match only, no title or conditions, so the comparison itself leaks nothing."""
+        hits = self.unscoped_search(principal, q, k)
+        docs = {d["_id"]: d for d in self.memories.find({"_id": {"$in": [h["_id"] for h in hits]}},
+                                                         {"embedding": 0, "hmacSecret": 0})}
+        cards = []
+        for h in hits:
+            doc = docs.get(h["_id"])
+            if doc is None:  # deleted since the index saw it
+                continue
+            doc["_match"] = "strong" if h["score"] >= STRONG_MATCH else "weak"
+            card = self.to_card(doc)
+            if principal.team_id not in doc["readableBy"]:
+                owner = doc["ownerTeamId"].removeprefix("team-").capitalize()
+                card = card.model_copy(update={"title": f"Hidden: a {owner} memory", "applicability": Applicability(),
+                                               "readable_by": [doc["ownerTeamId"]]})
+            cards.append(card)
+        return cards
+
+    # ------------------------------------------------------------------ admin lifecycle (P2-6)
+
+    def _owned(self, p: Principal, memory_id: str) -> dict:
+        """The memory, if the caller's team may read it AND owns it. Raises LookupError (-> 404) when the
+        team can't even see it, PermissionError (-> 403) when it can see it but doesn't own it."""
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(p)}, {"embedding": 0})
+        if doc is None:
+            raise LookupError(memory_id)
+        if doc["ownerTeamId"] != p.team_id:
+            raise PermissionError("only an admin of the owner team can do this")
+        return doc
+
+    def forget(self, principal: Principal, memory_id: str, reason: str) -> MemoryCard:
+        """Forget for good: hard-delete EVERY version of this memory (a superseded v1 still holds the
+        text) and leave a tombstone in the audit log with no content: who, why, when, which versions.
+        The per-memory HMAC secret is deleted with the documents, so earlier audit hashes can no longer
+        be linked to any content. Returns the grey "Forgotten" card."""
+        if not reason or not reason.strip():
+            raise ValueError("a reason is required")
+        doc = self._owned(principal, memory_id)
+        versions = list(self.memories.find({"lineageId": doc["lineageId"]}, {"_id": 1, "version": 1}))
+        self.memories.delete_many({"lineageId": doc["lineageId"]})
+        now = utc_now()
+        actor = _actor(principal)
+        audit.log_many(self.db, [
+            {"tenantId": principal.tenant_id, "memoryId": v["_id"], "version": v["version"], "event": "forgotten",
+             "actor": actor, "runId": None, "reason": reason.strip(), "contentHash": None,
+             "details": {"lineageId": doc["lineageId"], "versionsDeleted": len(versions)}}
+            for v in versions
+        ])
+        card = self.to_card(doc)
+        return card.model_copy(update={
+            "title": "Forgotten memory", "applicability": Applicability(),
+            "forgotten": Tombstone(forgotten_by=actor["id"], reason=reason.strip(), at=now),
+        })
+
+    def expire_now(self, principal: Principal, memory_id: str, reason: str) -> MemoryCard:
+        """Expire immediately: recall stops returning it at once (the search filter checks expiresAt);
+        the TTL index deletes it after the policy's purge grace."""
+        if not reason or not reason.strip():
+            raise ValueError("a reason is required")
+        doc = self._owned(principal, memory_id)
+        now = utc_now()
+        policy = get_policy(self.db, doc["tenantId"], doc["ownerTeamId"])
+        purge = now + timedelta(seconds=policy["purgeGraceSeconds"])
+        self.memories.update_one({"_id": memory_id}, {"$set": {"expiresAt": now, "purgeAt": purge}})
+        audit.log(self.db, tenant_id=principal.tenant_id, event="expired_now", actor=_actor(principal),
+                  memory_id=memory_id, version=doc["version"], reason=reason.strip(),
+                  details={"from": doc["expiresAt"], "purgeAt": purge}, content_hash=audit.content_hash(doc))
+        doc.update(expiresAt=now, purgeAt=purge)
+        return self.to_card(doc)
+
+    @staticmethod
+    def printable_scope(p: Principal) -> dict:
+        """The $vectorSearch pre-filter as shown on screen in the Fence view."""
+        return {**AtlasMemoryStore.scope(p, utc_now()), "expiresAt": {"$gt": "now"}}
 
     # ------------------------------------------------------------------ cards (UI)
 
