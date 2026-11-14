@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Traceback · Memory with receipts</title>
-  <!-- Vendored copies (no CDN at the venue): Pico 2.1.1, Prism 1.30.0, Lucide 1.73.0. -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0a0a'/%3E%3Cpath d='M10 11h12M16 11v11' stroke='%23fff' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <!-- Vendored copies (no CDN at the venue): Pico 2.1.1, Prism 1.30.0, Lucide 1.73.0, Geist 1.9.2 (OFL). -->
   <link rel="stylesheet" href="vendor/pico.min.css">
   <link rel="stylesheet" href="vendor/prism-tomorrow.min.css">
   <link rel="stylesheet" href="styles.css">
@@ -12,28 +13,38 @@
 <body class="team-payments">
   <!-- P3 owns this page, app.js and styles.css. P2 owns memory.js (the memory card). P1 owns voice.js. -->
   <header class="topbar">
-    <div class="brand"><i data-lucide="receipt"></i><div><strong>Traceback</strong><small>Memory with receipts</small></div></div>
+    <div class="brand">
+      <span class="logo"><i data-lucide="receipt-text"></i></span>
+      <div><strong>Traceback</strong><small>Memory with receipts</small></div>
+    </div>
     <span id="incident-title">Waiting for an incident</span>
+    <span id="live" hidden></span>
     <select id="identity" aria-label="Acting as"></select>
   </header>
   <main class="layout">
+    <div id="answer" class="idle" aria-live="polite"></div>
     <article id="run-panel" aria-label="Run">
-      <h2 class="panel-label"><i data-lucide="activity"></i> Run</h2>
-      <div id="answer" class="idle"><i data-lucide="scan-search"></i><span>Press 2 to start the Reuse run, or 0 to replay the sample run.</span></div>
       <ol id="timeline"></ol>
-      <div id="outcome"></div>
+      <p id="now" hidden></p>
     </article>
     <article id="memory-panel" aria-label="Memory">
-      <h2 class="panel-label"><i data-lucide="brain"></i> Memory</h2>
       <div id="memory-slot"></div>
+      <div id="outcome"></div>
     </article>
     <section id="compare" aria-label="With memory vs without memory" hidden></section>
   </main>
   <footer class="bottombar">
     <p id="status">Starting…</p>
-    <div id="keys"><i data-lucide="keyboard"></i>
-      <kbd>1</kbd> Earn <kbd>2</kbd> Reuse <kbd>3</kbd> Refuse <kbd>4</kbd> Fence <kbd>5</kbd> Forget
-      <span class="sep">|</span> <kbd>0</kbd> Sample <kbd>C</kbd> Compare</div>
+    <nav id="keys" aria-label="Demo beats">
+      <button type="button" data-key="1"><kbd>1</kbd>Earn</button>
+      <button type="button" data-key="2"><kbd>2</kbd>Reuse</button>
+      <button type="button" data-key="3"><kbd>3</kbd>Refuse</button>
+      <button type="button" data-key="4"><kbd>4</kbd>Fence</button>
+      <button type="button" data-key="5"><kbd>5</kbd>Forget</button>
+      <span class="sep" aria-hidden="true"></span>
+      <button type="button" data-key="0"><kbd>0</kbd>Sample</button>
+      <button type="button" data-key="c"><kbd>C</kbd>Compare</button>
+    </nav>
   </footer>
   <div id="voice-panel"></div>
   <script src="vendor/prism.js" data-manual></script>

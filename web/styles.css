@@ -1,221 +1,341 @@
-/* Traceback run view. Pico (vendor/pico.min.css) styles the basics; this file covers only what Pico
-   doesn't: top bar, answer banner, step timeline, patch lines, memory card fallback, compare columns,
-   bottom bar. Sizes are in rem so Pico's responsive root size scales them (20px at 1280, 21px at 1920). */
+/* Traceback run view, "paper trail": a quiet light desk where the one expressive object is the memory,
+   printed as a receipt and stamped (PROVEN / REFUSED / NOT APPLIED / VOID). Light on purpose: projectors
+   wash out dark greys. Pico (vendor/pico.min.css) styles the basics; the code block is the only dark object.
+   Fluid: the root size follows the viewport (see --pico-font-size) and everything else is in rem/em, so the
+   page fills any screen the same way it fills 1280x720 (20px root), just bigger. */
 
-:root {
-  --ok: #157347; --ok-bg: #e5f4ea;
-  --warn: #a15c00; --warn-bg: #fdf1dc;
-  --bad: #b42318; --bad-bg: #fde8e6;
-  --idle-bg: #eef1f5;
-  --line: #dde2e8;
-  --muted: #5b6672;
+@font-face {
+  font-family: "Geist"; font-weight: 100 900; font-display: swap;
+  src: url("vendor/geist/Geist-Variable.woff2") format("woff2");
 }
-/* Team colours: on <body> for the identity, and on a memory card for its owner. */
-.team-payments { --team: #0f766e; --team-bg: #e3f3f1; --memory-hl: #2dd4bf; }
+@font-face {
+  font-family: "Geist Mono"; font-weight: 100 900; font-display: swap;
+  src: url("vendor/geist/GeistMono-Variable.woff2") format("woff2");
+}
+
+/* ------------------------------------------------------------------ tokens */
+
+/* :root[data-theme] outranks Pico's own `:root:not([data-theme=dark])` light theme. */
+:root[data-theme="light"] {
+  --bg: #fafaf9; --paper: #fff; --ink: #0b0d10; --muted: #3f4955; --line: #e4e4e0; --line-strong: #c9c9c3;
+  --code-bg: #16181b;
+  --ok: #157347; --ok-bg: #e9f5ee; --warn: #a15c00; --warn-bg: #fdf3e1; --bad: #b42318; --bad-bg: #fdecea; --void: #6b7280;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --gutter: clamp(16px, 2.5vw, 48px);
+
+  /* 20px at 1280x720, 30px at 1920x1080, 40px at 2560x1440: whichever of width or height runs out first. */
+  --pico-font-size: clamp(16px, min(1.5625vw, 2.777vh), 48px);
+
+  --pico-font-family-sans-serif: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pico-font-family-monospace: var(--mono);
+  --pico-background-color: var(--bg);
+  --pico-color: var(--ink);
+  --pico-muted-color: var(--muted);
+  --pico-muted-border-color: var(--line);
+}
+/* Team colour = whose memory. On <body> for the identity, and on a receipt for its owner. */
+.team-payments { --team: #0e7490; --team-bg: #e0f4f8; --memory-hl: #22d3ee; }
 .team-platform { --team: #6d28d9; --team-bg: #efe8fd; --memory-hl: #a78bfa; }
 
-html, body { background: #f3f5f8; }
 body {
   --pico-primary: var(--team);
   --pico-primary-border: var(--team);
   --pico-form-element-focus-color: var(--team);
+  -webkit-font-smoothing: antialiased;
+  /* One screen: header, the desk, the key bar. Columns scroll on their own if they ever overflow. */
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; height: 100dvh;
 }
-svg.lucide { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; stroke-width: 2.25; }
+svg.lucide { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; stroke-width: 2; }
+:focus-visible { outline: 2px solid var(--team); outline-offset: 2px; }
 
 /* ------------------------------------------------------------------ top bar */
 
 body > header.topbar {
-  position: sticky; top: 0; z-index: 10;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem;
-  padding: 0.7rem 1.5rem;
-  background: #fff; border-top: 5px solid var(--team); border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem;
+  padding: 0.4rem var(--gutter); border-bottom: 1px solid var(--line); background: var(--paper);
 }
-.brand { display: flex; align-items: center; gap: 0.6rem; line-height: 1.15; }
-.brand > svg.lucide { width: 1.9rem; height: 1.9rem; color: var(--team); }
-.brand strong { display: block; font-size: 1.25rem; letter-spacing: -0.01em; }
-.brand small { display: block; font-size: 0.7rem; color: var(--muted); }
+.brand { display: flex; align-items: center; gap: 0.65rem; line-height: 1.15; }
+.brand .logo { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.5rem; background: var(--ink); color: #fff; }
+.brand .logo svg.lucide { width: 1.15rem; height: 1.15rem; }
+.brand strong { display: block; font-size: 1.1rem; font-weight: 650; letter-spacing: -0.03em; }
+.brand small { display: block; margin-top: 0.15rem; font: 500 0.6rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 #incident-title {
-  flex: 1; min-width: 14rem; font-size: 1.1rem; font-weight: 600;
+  flex: 1; min-width: 14rem; font-size: 1.1rem; font-weight: 600; letter-spacing: -0.015em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-#incident-title::before { content: "Incident · "; color: var(--muted); font-weight: 400; }
-select#identity {
-  width: auto; margin: 0; padding: 0.45rem 2.4rem 0.45rem 1rem;
-  border: 2px solid var(--team); border-radius: 999px;
-  background-color: var(--team-bg); color: var(--team);
-  font-size: 0.9rem; font-weight: 700; cursor: pointer;
+#live {
+  display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.2rem 0.7rem;
+  border: 1px solid var(--line-strong); border-radius: 999px; font: 600 0.75rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.06em;
 }
+#live::before { content: ""; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--team); }
+#live[data-mode="live"]::before { animation: ping 1.4s ease-out infinite; }
+#live[data-mode="replay"] { border-style: dashed; color: var(--muted); }
+#live[data-mode="replay"]::before { background: var(--void); }
+#live[data-mode="done"]::before { background: var(--ok); }
+select#identity {
+  width: auto; margin: 0; padding: 0.4rem 2.4rem 0.4rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--team) 45%, transparent); border-radius: 999px;
+  background-color: var(--team-bg); color: var(--team); font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  transition: color 0.3s, background-color 0.3s, border-color 0.3s;
+}
+@keyframes ping { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--team) 60%, transparent); } to { box-shadow: 0 0 0 0.45rem transparent; } }
 
-/* ------------------------------------------------------------------ layout */
+/* ------------------------------------------------------------------ the desk: answer on top, run | receipt below */
 
 main.layout {
-  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1.5rem;
-  max-width: 1800px; margin: 0 auto; padding: 1.25rem 1.5rem 5rem;
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem 2.5rem; width: 100%; margin: 0; padding: 0.75rem var(--gutter) 0.5rem; min-height: 0;
 }
-main.layout > article { margin: 0; }
-#memory-panel { position: sticky; top: 6rem; align-self: start; }
-main.layout:has(#compare:not([hidden])) #memory-panel { position: static; } /* don't slide over compare */
-.panel-label {
-  display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.9rem;
-  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+#answer { grid-column: 1 / -1; }
+main.layout > article {
+  margin: 0; padding: 0.25rem 0 0; background: none; box-shadow: none;
+  overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
 }
-
-/* ------------------------------------------------------------------ answer banner */
 
 #answer {
-  display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.25rem;
-  padding: 1rem 1.25rem; border-radius: 0.6rem; border-left: 6px solid var(--muted);
-  background: var(--idle-bg); font-size: 1.35rem; font-weight: 650; line-height: 1.35;
+  display: flex; align-items: flex-start; gap: 0.8rem; margin: 0;
+  padding: 0.55rem 1.2rem; border: 1px solid var(--line); border-left: 6px solid var(--line-strong); border-radius: 0.6rem;
+  background: var(--paper); color: var(--ink);
+  font-size: 1.3rem; font-weight: 650; letter-spacing: -0.025em; line-height: 1.2;
+  transition: border-color 0.3s;
 }
-#answer > svg.lucide { width: 1.6rem; height: 1.6rem; margin-top: 0.05em; }
-#answer.ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
-#answer.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
-#answer.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
-#answer.idle { color: var(--muted); font-weight: 500; }
+#answer > svg.lucide { width: 1.1em; height: 1.1em; margin-top: 0.05em; stroke-width: 2.5; }
+#answer.ok { border-left-color: var(--ok); }
+#answer.warn { border-left-color: var(--warn); }
+#answer.bad { border-left-color: var(--bad); }
+#answer.ok > svg { color: var(--ok); }
+#answer.warn > svg { color: var(--warn); }
+#answer.bad > svg { color: var(--bad); }
+#answer.idle { color: var(--muted); font-weight: 550; }
+#answer > span { animation: rise 0.25s var(--ease); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 
 /* ------------------------------------------------------------------ step timeline */
 
 #timeline { list-style: none; margin: 0; padding: 0; }
-#timeline li {
-  position: relative; display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: 0.9rem;
-  margin: 0; padding: 0 0 0.9rem; list-style: none;
-  font-size: 1.05rem; font-weight: 600; line-height: 1.4; animation: appear 0.3s ease-out;
+/* The progress line: each step's connector draws down when the next step lands. */
+#timeline li:not(:last-child)::before {
+  content: ""; position: absolute; left: calc(0.95rem - 1px); top: 1.9rem; bottom: 0; width: 2px;
+  background: var(--line-strong); transform-origin: top; animation: grow 0.3s var(--ease);
 }
-#timeline li:not(:last-child)::before { /* the line joining one step to the next */
-  content: ""; position: absolute; left: calc(1.25rem - 1px); top: 2.5rem; bottom: 0;
-  width: 2px; background: var(--line);
+@keyframes grow { from { transform: scaleY(0); } }
+#timeline li {
+  position: relative; display: grid; grid-template-columns: 1.9rem minmax(0, 1fr); gap: 0.9rem;
+  margin: 0; padding: 0 0 0.35rem; list-style: none; scroll-margin: 1rem 0;
+  font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3;
+  animation: rise 0.25s var(--ease);
 }
 #timeline .icon {
-  width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center;
-  background: var(--idle-bg); color: var(--muted);
+  position: relative; z-index: 1; display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  background: var(--paper); border: 1px solid var(--line-strong); color: var(--ink);
 }
-#timeline .icon svg.lucide { width: 1.3rem; height: 1.3rem; }
-#timeline li > div { padding-top: 0.4rem; }
-#timeline li.ok .icon { background: var(--ok-bg); color: var(--ok); }
-#timeline li.bad .icon { background: var(--bad-bg); color: var(--bad); }
-#timeline li.warn .icon { background: var(--warn-bg); color: var(--warn); }
-#timeline li.memory .icon { background: var(--team); color: #fff; }
-#timeline li.minor { font-size: 0.9rem; font-weight: 400; color: var(--muted); }
-#timeline li.minor .icon { width: 1.9rem; height: 1.9rem; justify-self: center; }
-#timeline li.minor .icon svg.lucide { width: 1rem; height: 1rem; }
-#timeline li.minor > div { padding-top: 0.2rem; }
-.sub { display: block; margin-top: 0.15rem; font-size: 0.85rem; font-weight: 400; color: var(--muted); }
-@keyframes appear { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+#timeline .icon svg.lucide { width: 1rem; height: 1rem; }
+#timeline li > div { padding-top: 0.15rem; min-width: 0; }
+#timeline li.ok .icon { border-color: var(--ok); color: var(--ok); }
+#timeline li.bad .icon { border-color: var(--bad); color: var(--bad); }
+#timeline li.warn .icon { border-color: var(--warn); color: var(--warn); }
+#timeline li.memory .icon { background: var(--team); border-color: var(--team); color: #fff; }
+#timeline li.minor { font-size: 0.9rem; font-weight: 450; color: var(--muted); }
+.sub {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;
+  margin-top: 0.1rem; font-size: 0.9rem; font-weight: 400; letter-spacing: 0; color: var(--muted);
+}
+#timeline li.bad .sub { -webkit-line-clamp: 2; }
 
-/* ------------------------------------------------------------------ patch (Prism tokens, our own lines) */
+/* The "now" line under the steps: what the agent is doing, with the run's clock. */
+#now { display: flex; align-items: center; gap: 0.9rem; margin: 0.1rem 0 0; font-size: 0.9rem; color: var(--muted); }
+#now .dot { width: 0.6rem; height: 0.6rem; margin: 0 0.65rem; flex: none; border-radius: 50%; background: var(--team); animation: ping 1.4s ease-out infinite; }
+#now .text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#now .clock { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Refuse: what the memory needs vs what this incident has. */
+.mismatch { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.5rem; font-size: 1rem; }
+.mismatch .need, .mismatch .have { padding: 0.35rem 0.8rem; border: 1px solid var(--line-strong); border-radius: 0.6rem; background: var(--paper); }
+.mismatch .have { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.mismatch .ne { font-size: 1.6rem; font-weight: 700; color: var(--bad); }
+.mismatch code { padding: 0; background: none; color: inherit; font-size: 0.95rem; font-weight: 600; }
+
+/* ------------------------------------------------------------------ patch: a window around the memory's lines */
 
 pre.patch {
-  margin: 0.6rem 0 0.25rem; padding: 0.75rem 0; border-radius: 0.5rem;
-  background: #1d1f21; color: #d4d4d4; font-size: 0.78rem; line-height: 1.6; overflow-x: auto;
-  counter-reset: line;
+  margin: 0.4rem 0 0.2rem; padding: 0.45rem 0; border-radius: 0.6rem;
+  background: var(--code-bg); color: #e6e6e6; font-size: 0.95rem; line-height: 1.4; overflow: hidden;
 }
-pre.patch .line { display: block; padding: 0 1rem; white-space: pre; }
-#timeline pre.patch .line::before {
+pre.patch .line { position: relative; display: block; padding: 0 1rem 0 3.2rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.patch .line::before {
   counter-increment: line; content: counter(line);
-  display: inline-block; width: 2ch; margin-right: 1.5ch; text-align: right; color: #6b7280;
+  position: absolute; left: 0; width: 2.3rem; text-align: right; font-size: 0.8rem; line-height: 1.9; color: #8b8f96;
 }
+pre.patch .line.near { opacity: 0.55; }
 pre.patch .line.from-memory {
-  position: relative;
-  background: color-mix(in srgb, var(--memory-hl) 22%, transparent);
-  box-shadow: inset 4px 0 0 var(--memory-hl);
+  padding-block: 0.15rem; font-size: 1.05rem; font-weight: 600;
+  background: color-mix(in srgb, var(--memory-hl) 22%, transparent); box-shadow: inset 4px 0 0 var(--memory-hl);
 }
-/* Pinned to the right edge of the code box, so it stays visible even when long lines are cut off. */
+pre.patch .line.empty { padding-block: 0.15rem; } /* only the dashed "empty" box, where the memory's line was */
+pre.patch .line.empty::after {
+  content: "empty"; display: block; padding: 0 0.6rem; border: 1px dashed #8b8f96; border-radius: 0.3rem;
+  color: #8b8f96; font-size: 0.8rem; line-height: 1.7;
+}
+/* A patch with no memory lines shows the whole file: cap it and fade the rest out. */
+pre.patch.full { max-height: 10em; mask-image: linear-gradient(#000 75%, transparent); }
 pre.patch .tag {
-  position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
-  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.05rem 0.6rem;
-  border-radius: 999px; background: var(--memory-hl); color: #0b1f1d;
-  font: 700 0.7rem/1.5 var(--pico-font-family-sans-serif);
+  display: flex; align-items: center; gap: 0.35rem; width: fit-content; margin: 0.25rem 0 0.1rem;
+  padding: 0.05rem 0.6rem; border-radius: 999px; background: var(--memory-hl); color: #06141a;
+  font: 600 0.75rem/1.5 var(--pico-font-family-sans-serif); white-space: normal;
 }
 pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
-/* In a narrow code box the pinned tag would cover the line itself: put it underneath instead. */
-#timeline li > div { container-type: inline-size; } /* on the wrapper: containment on the <pre> would reset the line counter */
-@container (max-width: 26rem) {
-  pre.patch .tag { position: static; transform: none; display: flex; width: fit-content; margin: 0.15rem 0 0.25rem 3.5ch; }
-}
 
-/* ------------------------------------------------------------------ outcome badge */
+/* ------------------------------------------------------------------ outcome badge (also the compare badges) */
 
 #outcome { display: none; }
 #outcome.ok, #outcome.warn, #outcome.bad, .badge {
-  display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem;
-  padding: 0.55rem 1.25rem; border-radius: 999px; color: #fff; font-size: 1.1rem; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem;
+  padding: 0.45rem 1.1rem 0.45rem 0.9rem; border-radius: 999px; color: #fff;
+  font-size: 1.05rem; font-weight: 650; animation: rise 0.3s var(--ease);
 }
 #outcome.ok, .badge.ok { background: var(--ok); }
 #outcome.warn, .badge.warn { background: var(--warn); }
 #outcome.bad, .badge.bad { background: var(--bad); }
-
-/* ------------------------------------------------------------------ memory card (fallback until memory.js) */
-
-#memory-slot:empty::before {
-  content: "No memory in play yet."; display: block; padding: 2rem 1rem; text-align: center;
-  border: 2px dashed var(--line); border-radius: 0.75rem; color: var(--muted);
-}
-.memory-fallback { border: 2px solid var(--team); border-radius: 0.75rem; overflow: hidden; animation: appear 0.3s ease-out; }
-.memory-fallback .memory-head {
-  display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between;
-  padding: 0.7rem 1.1rem; background: var(--team-bg);
-}
-.memory-fallback .memory-body { padding: 0.9rem 1.1rem 0.4rem; }
-.memory-fallback h3 { margin: 0 0 0.6rem; font-size: 1.15rem; line-height: 1.3; }
-.chip {
-  display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.75rem;
-  border-radius: 999px; font-size: 0.8rem; font-weight: 700;
-}
-.chip.owner { background: var(--team); color: #fff; }
-.chip.match { border: 2px solid var(--team); color: var(--team); background: #fff; }
-.chip.match.weak { border-color: var(--warn); color: var(--warn); }
-.visible { display: flex; align-items: center; gap: 0.45rem; font-size: 0.95rem; }
-.conditions { list-style: none; margin: 0.5rem 0 0; padding: 0; }
-.conditions li {
-  display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); gap: 0.2rem 0.6rem; align-items: center;
-  margin: 0; padding: 0.5rem 0; border-top: 1px solid var(--line); list-style: none; font-size: 0.95rem;
-}
-.conditions code { grid-column: 2; justify-self: start; }
-.conditions .mark { width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center; color: #fff; }
-.conditions .mark svg.lucide { width: 1rem; height: 1rem; stroke-width: 3; }
-.conditions li.ok .mark { background: var(--ok); }
-.conditions li.bad .mark { background: var(--bad); }
-.conditions code { font-size: 0.8rem; }
-
-/* ------------------------------------------------------------------ compare view (key c) */
-
-#compare:not([hidden]) { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-#compare > p { grid-column: 1 / -1; margin: 0; padding: 1.25rem; border-radius: 0.6rem; background: #fff; }
-.compare-col { margin: 0; border-top: 6px solid var(--muted); }
-.compare-col.with { border-top-color: var(--ok); }
-.compare-col.without { border-top-color: var(--bad); }
-.compare-col h3 { display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; }
-.compare-col ol { list-style: none; padding: 0; font-size: 1.05rem; font-weight: 600; }
-.compare-col ol li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; list-style: none; }
-.compare-col ol li .sub { flex-basis: 100%; margin-left: 1.65em; }
-.compare-col li.ok { color: var(--ok); }
-.compare-col li.bad { color: var(--bad); }
-.badge { display: inline-block; }
 .badge::first-letter { text-transform: uppercase; }
 
-/* ------------------------------------------------------------------ bottom bar: status + keys */
+/* ------------------------------------------------------------------ the receipt: our fallback and memory.js's .tb-card
+   memory.js injects its own <style> and inline team colours; the #memory-slot prefix (and !important against
+   inline styles) gives both the same printed-receipt look. */
+
+#memory-slot { position: relative; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.08)) drop-shadow(0 8px 14px rgb(0 0 0 / 0.07)); }
+#memory-slot:empty::before {
+  content: "No memory in play yet."; display: block; padding: 2.5rem 1rem; text-align: center;
+  border: 1px dashed var(--line-strong); border-radius: 0.6rem; color: var(--muted);
+}
+#memory-slot[data-empty]:empty::before { content: attr(data-empty); }
+.memory-fallback, #memory-slot .tb-card {
+  --zig: 0.55rem;
+  position: relative; margin: 0 0 0.5rem; padding: 0.9rem 1.2rem calc(0.8rem + var(--zig));
+  background: var(--paper); border: 0 !important; border-radius: 0.2rem 0.2rem 0 0;
+  color: var(--ink); font: 0.9rem/1.45 var(--mono);
+  /* zig-zag tear along the bottom edge */
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(2 * var(--zig)) 100%;
+}
+.print { animation: print-in 0.9s steps(12) both; }
+@keyframes print-in { from { transform: translateY(-100%); } }
+.receipt-head, #memory-slot .tb-chips {
+  margin: 0 0 0.6rem; padding-bottom: 0.55rem; border-bottom: 1px dashed var(--line-strong);
+}
+.receipt-head { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; color: var(--muted); }
+.memory-fallback h3, #memory-slot .tb-title { margin: 0 0 0.5rem; font: 600 1.05rem/1.3 var(--mono); letter-spacing: -0.01em; }
+.receipt-items { list-style: none; margin: 0; padding: 0; }
+.receipt-items li { display: flex; align-items: baseline; gap: 0.5rem; margin: 0; padding: 0.1rem 0; list-style: none; }
+.receipt-items .k { min-width: 0; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+.receipt-items .dots { flex: 1 1 1rem; border-bottom: 2px dotted var(--line-strong); }
+.receipt-items .v { flex: none; font-weight: 600; }
+.receipt-items .ok, #memory-slot .tb-proof, #memory-slot .tb-ok .tb-icon { color: var(--ok); }
+.receipt-items .bad, #memory-slot .tb-line.tb-bad, #memory-slot .tb-bad .tb-icon { color: var(--bad); }
+#memory-slot .tb-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+#memory-slot .tb-chip {
+  padding: 0.05rem 0.55rem; border: 1px solid var(--line-strong); border-radius: 0.3rem;
+  background: none !important; color: var(--ink); font: 600 0.75rem/1.5 var(--mono); text-transform: uppercase; letter-spacing: 0.04em;
+}
+#memory-slot .tb-owner { border-color: var(--ink); }
+#memory-slot .tb-warn { border-color: var(--warn); color: var(--warn); }
+#memory-slot .tb-line, #memory-slot .tb-cond { margin: 0.15rem 0; font-size: 0.9rem; }
+#memory-slot .tb-label { margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px dashed var(--line-strong); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+#memory-slot .tb-muted { font-size: 0.8rem; color: var(--muted); }
+#memory-slot .tb-bar { height: 6px; background: var(--line); }
+#memory-slot .tb-bar-fill { background: var(--ink) !important; }
+#memory-slot .tb-details { margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); }
+#memory-slot .tb-details summary { cursor: pointer; }
+#memory-slot .tb-forgotten { color: var(--muted); }
+#memory-slot :is(.tb-forgotten, .tb-expired) { filter: grayscale(1); opacity: 0.7; }
+/* Refused or not applied: the receipt fades to grey under its stamp. */
+#memory-slot:is([data-stamp="not-applied"], [data-stamp="refused"]) > :not(.stamp) { filter: grayscale(1); opacity: 0.6; transition: filter 0.3s, opacity 0.3s; }
+
+/* Rubber stamps. Only stamps overshoot: they land from 1.6x. */
+.stamp, #memory-slot .tb-forgotten::after {
+  position: absolute; bottom: 22%; left: 36%; z-index: 2;
+  padding: 0.1rem 0.8rem; border: 4px solid currentColor; border-radius: 0.45rem;
+  color: var(--stamp, var(--void)); background: color-mix(in srgb, var(--paper) 40%, transparent);
+  font: 800 1.35rem/1.25 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+  transform: rotate(-6deg); mix-blend-mode: multiply; pointer-events: none;
+  animation: stamp 0.18s cubic-bezier(0.3, 1.4, 0.6, 1) both;
+}
+.stamp.proven { --stamp: var(--ok); }
+.stamp.refused { --stamp: var(--bad); }
+.stamp.not-applied { --stamp: var(--warn); }
+.stamp.still { animation: none; }
+#memory-slot .tb-forgotten::after { content: "Void"; bottom: 30%; }
+@keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(1.6); } }
+
+/* ------------------------------------------------------------------ compare overlay (key c, Esc closes) */
+
+#compare:not([hidden]) {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; gap: 1rem;
+  margin: 0; padding: 1.25rem 2.5rem; overflow: auto; background: var(--bg); animation: rise 0.25s var(--ease);
+}
+#compare header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+#compare h2 { margin: 0; font-size: 1.6rem; font-weight: 650; letter-spacing: -0.03em; }
+#compare .close, #keys button {
+  display: inline-flex; align-items: center; gap: 0.45rem; width: auto; margin: 0;
+  padding: 0.2rem 0.6rem 0.2rem 0.3rem; border: 1px solid transparent; border-radius: 0.55rem;
+  background: transparent; box-shadow: none; color: var(--muted);
+  font-size: 0.75rem; font-weight: 500; line-height: 1.2; cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+#compare .close { border-color: var(--line-strong); font-size: 0.9rem; }
+#compare .empty { margin: auto; font-size: 1.2rem; color: var(--muted); }
+#compare .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.compare-col { margin: 0; padding: 1rem 1.5rem; background: var(--paper); border: 1px solid var(--line); border-radius: 0.8rem; box-shadow: none; }
+.compare-col.with { border-color: var(--team); box-shadow: 0 0 0 4px var(--team-bg); }
+.compare-col .numeral { font-size: 3.6rem; font-weight: 700; line-height: 1; letter-spacing: -0.05em; }
+.compare-col.with .numeral { color: var(--team); }
+.compare-col .numeral-label { margin: 0.2rem 0 0.6rem; font-size: 0.9rem; color: var(--muted); }
+.compare-col h3 { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1.3rem; font-weight: 650; }
+.compare-col pre.patch { font-size: 0.85rem; }
+.compare-col pre.patch .line.from-memory { font-size: 0.95rem; }
+.compare-col .failing code { padding: 0.15rem 0.5rem; background: var(--bad-bg); color: var(--bad); font-size: 0.9rem; font-weight: 600; }
+.compare-col .attempts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 0; font-size: 1.1rem; font-weight: 650; }
+.compare-col .attempts .ok { color: var(--ok); }
+.compare-col .attempts .bad { color: var(--bad); }
+.compare-col .attempts .arrow { color: var(--muted); }
+
+/* ------------------------------------------------------------------ bottom bar: status + key chips */
 
 .bottombar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
   display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.5rem;
-  padding: 0.45rem 1.5rem; background: rgba(255, 255, 255, 0.95); border-top: 1px solid var(--line);
-  font-size: 0.7rem; color: var(--muted);
+  padding: 0.2rem var(--gutter); border-top: 1px solid var(--line); background: var(--paper);
 }
-#status { flex: 1; min-width: 12rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#keys { display: flex; align-items: center; gap: 0.35rem; }
-#keys kbd {
-  padding: 0.05rem 0.45rem; border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 0.3rem;
-  background: #fff; color: inherit; font-size: 0.7rem; font-weight: 700;
+#status { flex: 1; min-width: 12rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 0.7rem/1.4 var(--mono); color: var(--muted); }
+#keys { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem; }
+#keys button:hover, #compare .close:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+#keys button.current, #keys button[aria-pressed="true"] { background: var(--team-bg); color: var(--team); }
+#keys button.pressed { animation: press 0.2s var(--ease); }
+#keys kbd, #compare .close kbd {
+  display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.35rem;
+  border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 0.35rem;
+  background: var(--paper); color: var(--ink); font: 600 0.7rem/1 var(--mono);
 }
-#keys .sep { margin: 0 0.3rem; opacity: 0.5; }
-#voice-panel { position: fixed; right: 1.25rem; bottom: 3rem; z-index: 11; }
+#keys button.current kbd, #keys button[aria-pressed="true"] kbd { border-color: var(--team); color: var(--team); }
+#keys .sep { width: 1px; height: 1.2rem; margin: 0 0.4rem; background: var(--line-strong); }
+@keyframes press { 50% { transform: scale(0.92); } }
+#voice-panel { position: fixed; right: 1.25rem; bottom: 3.5rem; z-index: 11; }
 
-/* ------------------------------------------------------------------ narrow screens (about 800px) */
+/* ------------------------------------------------------------------ narrow screens (about 800px): one column, page scrolls */
 
 @media (max-width: 900px) {
-  main.layout { grid-template-columns: minmax(0, 1fr); padding: 1rem 1rem 6rem; }
-  #memory-panel { position: static; }
-  #compare:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
-  body > header.topbar { position: static; padding: 0.6rem 1rem; }
-  #answer { font-size: 1.2rem; }
+  body { height: auto; min-height: 100dvh; }
+  main.layout { grid-template-columns: minmax(0, 1fr); }
+  main.layout > article { overflow: visible; }
+  .bottombar { position: sticky; bottom: 0; z-index: 5; }
+  #status { flex-basis: 100%; }
+  #compare .columns { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Landscape screens are height-bound (the root size follows the height): older steps drop their second
+   line so the whole run fits without scrolling. */
+@media (min-aspect-ratio: 14/9) and (min-width: 901px) {
+  #timeline li:not(:nth-last-child(-n+2)):not(.bad) .sub { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
