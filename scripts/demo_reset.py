@@ -4,7 +4,8 @@
 
 1. Drop leftover practice-app databases (fixture_*) from crashed or interrupted runs.
 2. Reseed Atlas through P2's scripts/seed_demo.py: team policies, the Earn memory (24 h),
-   the 90-second canary memory and the labelled distractors.
+   the 90-second canary memory, the labelled distractors, and one real refused write (--poison:
+   case P's poisoned fix fails the trusted tests, so Atlas refuses it; the R11 receipt shows it).
 3. Check the practice app still reproduces the bug (runner reproduce A), so a broken fixture
    is caught before the judges see it.
 
@@ -53,7 +54,7 @@ def drop_fixture_databases() -> bool:
 
 def reseed(db: str) -> bool:
     proc = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "seed_demo.py"), "--db", db, "--reset"],
+        [sys.executable, str(ROOT / "scripts" / "seed_demo.py"), "--db", db, "--reset", "--poison"],
         cwd=ROOT, capture_output=True, text=True,
     )
     output = (proc.stdout + proc.stderr).strip()
