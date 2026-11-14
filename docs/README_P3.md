@@ -27,6 +27,7 @@ Two small FastAPI services stand in for "the code a team is debugging". Each is 
 | `test_duplicate_event_reproduces` | **The reproduction.** Sends the same event twice and expects HTTP 200 both times. It fails on the original code, so "the bug is real" is proven before any fix is judged. |
 | `test_duplicate_event_single_effect` | The customer is credited exactly once and only one payment row exists. Stops a "fix" that just ignores errors but double-credits. |
 | `test_distinct_events_same_customer` | Two different events from one customer must both be processed. Stops a fix that blocks too much, and is the reproduction for case C. |
+| `test_handler_does_not_change_indexes` | Request handlers must not create or drop indexes; stops a "fix" that builds the index at request time (the case C hack). |
 | `test_unique_index_still_present` | The unique index on the event id must stay. This is the test that a poisoned "drop the unique index" fix fails. |
 | `test_replay_recorded_for_reconciliation` | **The reconciliation convention.** A duplicate delivery must call `mark_replayed` exactly once. This is what makes memory necessary: a plain `try/except` fix fails here, and only a fix that knows the team rule passes. Platform has no such rule, so the test is skipped for its app. |
 
