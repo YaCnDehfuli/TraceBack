@@ -6,12 +6,20 @@ Route order matters: /memories/search and /memories/compare-unscoped must stay a
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from fastapi import APIRouter, HTTPException, status
 
 from contracts.models import CorrectBody, MemoryCard, MemorySearchResult, ReasonBody
 from core.auth import AdminPrincipal, CurrentPrincipal
+from memory.store import AtlasMemoryStore
 
 router = APIRouter(prefix="/memories", tags=["memory"])
+
+
+@lru_cache(maxsize=1)
+def store() -> AtlasMemoryStore:
+    return AtlasMemoryStore()
 
 
 def _todo(item: str) -> HTTPException:
@@ -20,8 +28,8 @@ def _todo(item: str) -> HTTPException:
 
 @router.get("", response_model=list[MemoryCard])
 def list_memories(principal: CurrentPrincipal) -> list[MemoryCard]:
-    """Memories the caller's team may read."""
-    raise _todo("P2-5")
+    """Memories the caller's team may read (any status, so expired ones show as expired)."""
+    return store().list_cards(principal)
 
 
 @router.get("/search", response_model=MemorySearchResult)
@@ -39,7 +47,10 @@ def compare_unscoped(q: str, principal: AdminPrincipal) -> MemorySearchResult:
 
 @router.get("/{memory_id}", response_model=MemoryCard)
 def get_memory(memory_id: str, principal: CurrentPrincipal) -> MemoryCard:
-    raise _todo("P2-4")
+    card = store().get_card(principal, memory_id)
+    if card is None:  # same answer for "missing" and "not your team", so ids can't be probed
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No memory with that id for your team.")
+    return card
 
 
 @router.get("/{memory_id}/audit")

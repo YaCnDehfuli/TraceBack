@@ -279,6 +279,35 @@ class AtlasMemoryStore:
                   details={"memoryIds": [h["_id"] for h in hits]})
         return hits
 
+    # ------------------------------------------------------------------ cards (UI)
+
+    @staticmethod
+    def readable(p: Principal) -> dict:
+        """Who may SEE a memory's card: same tenant and team in readableBy, any status or expiry,
+        so the UI can show expired / superseded states. Searching still uses scope()."""
+        return {"tenantId": p.tenant_id, "readableBy": {"$in": [p.team_id]}}
+
+    def list_cards(self, principal: Principal, limit: int = 20) -> list[MemoryCard]:
+        """GET /memories: the caller's team's memories, earned ones first, then seeded."""
+        docs = list(
+            self.memories.find(self.readable(principal), {"embedding": 0, "hmacSecret": 0})
+            .sort([("seeded", 1), ("createdAt", -1)])
+            .limit(limit)
+        )
+        if docs:
+            audit.log(self.db, tenant_id=principal.tenant_id, event="listed", actor=_actor(principal),
+                      details={"memoryIds": [d["_id"] for d in docs]})
+        return [self.to_card(d) for d in docs]
+
+    def get_card(self, principal: Principal, memory_id: str) -> MemoryCard | None:
+        """GET /memories/{id}. None if missing OR not readable, so other teams can't probe for ids."""
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(principal)}, {"embedding": 0})
+        if not doc:
+            return None
+        audit.log(self.db, tenant_id=principal.tenant_id, event="viewed", actor=_actor(principal),
+                  memory_id=memory_id, version=doc["version"], content_hash=audit.content_hash(doc))
+        return self.to_card(doc)
+
     # ------------------------------------------------------------------ shapes
 
     @staticmethod
