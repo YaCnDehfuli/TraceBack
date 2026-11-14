@@ -1,7 +1,7 @@
 """Shared fixtures for the trusted tests.
 
-The runner copies a practice app into a temporary folder and points FIXTURE_APP_DIR at it.
-Each test gets its own fresh database, which is dropped afterwards.
+The runner copies a practice app into a temporary folder, points FIXTURE_APP_DIR at it and sets
+FIXTURE_APP_NAME to the app's name. Each test gets its own fresh database, dropped afterwards.
 """
 
 import os
@@ -11,14 +11,23 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parent.parent
-APP_DIR = Path(os.environ.get("FIXTURE_APP_DIR", REPO / "fixture_app" / "payments-webhooks"))
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+APP_NAME = os.environ.get("FIXTURE_APP_NAME", "payments-webhooks")
+APP_DIR = Path(os.environ.get("FIXTURE_APP_DIR", REPO / "fixture_app" / APP_NAME))
 sys.path.insert(0, str(APP_DIR))
+sys.path.insert(0, str(HERE))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from apps import APPS  # noqa: E402
 from app.db import get_db  # noqa: E402
 from app.main import app  # noqa: E402
+
+
+@pytest.fixture
+def names():
+    return APPS[APP_NAME]
 
 
 @pytest.fixture

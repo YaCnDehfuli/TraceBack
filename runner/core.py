@@ -62,6 +62,7 @@ def _workspace(case_id: str, manifest: dict) -> Path:
     if overlay.is_dir():
         shutil.copytree(overlay, ws / "app_root", dirs_exist_ok=True, ignore=IGNORE)
     shutil.copytree(TRUSTED, ws / "trusted_tests", ignore=IGNORE)
+    (ws / "app_name.txt").write_text(manifest["app"], encoding="utf-8")
     return ws
 
 
@@ -98,6 +99,7 @@ def _run_pytest(ws: Path, db_prefix: str, select: str | None = None) -> dict:
     env = {key: os.environ[key] for key in SAFE_ENV_KEYS if key in os.environ}
     env.update(
         FIXTURE_APP_DIR=str(ws / "app_root"),
+        FIXTURE_APP_NAME=ws.joinpath("app_name.txt").read_text(encoding="utf-8").strip(),
         FIXTURE_MONGODB_URI=_fixture_uri(),
         FIXTURE_DB_PREFIX=db_prefix,
         PYTHONDONTWRITEBYTECODE="1",
