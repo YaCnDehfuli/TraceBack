@@ -434,7 +434,8 @@
 
   // ------------------------------------------------------------------ following a run
 
-  const FINAL = new Set(["run_finished", "error"]);
+  // Only run_finished ends a run: the loop reports non-fatal problems as "error" events and keeps going.
+  const FINAL = new Set(["run_finished"]);
   const isFinished = (runId) => !!runs[runId] && runs[runId].events.some((e) => FINAL.has(e.type));
 
   function remember(runId, caseId, event, replay = false) {
@@ -468,6 +469,16 @@
           setStatus("Run finished");
           return;
         }
+      }
+      // Safety net: a run that died without run_finished must not be followed forever.
+      if (events.some((e) => e.type === "error")) {
+        try {
+          if ((await api(`/runs/${encodeURIComponent(runId)}`)).status === "error") {
+            setLive("done");
+            setStatus("Run stopped");
+            return;
+          }
+        } catch (_) { /* keep polling */ }
       }
       await new Promise((r) => setTimeout(r, POLL_MS));
     }

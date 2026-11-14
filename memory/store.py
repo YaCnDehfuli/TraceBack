@@ -1,7 +1,7 @@
 """AtlasMemoryStore: the real MemoryStore (contracts/interfaces.py). The only code that writes memories.
 
 Done: promote, is_searchable, recall, search, unscoped_search (P2-2, P2-5); record_use, forget,
-expire_now (P2-6). Still to do: correct (P2-7).
+expire_now (P2-6); correct, history (P2-7).
 
 Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 - recall: $vectorSearch pre-filter on tenantId, readableBy, status="active", expiresAt > now,
@@ -435,6 +435,75 @@ class AtlasMemoryStore:
                   details={"from": doc["expiresAt"], "purgeAt": purge}, content_hash=audit.content_hash(doc))
         doc.update(expiresAt=now, purgeAt=purge)
         return self.to_card(doc)
+
+    # ------------------------------------------------------------------ correction and audit (P2-7)
+
+    def correct(self, principal: Principal, memory_id: str, excludes: list[str], reason: str) -> MemoryCard:
+        """Correct WITHOUT overwriting (guide rule 5): a new version with narrowed `excludes` supersedes
+        the current one, and both stay in the lineage. Only narrowing is allowed here (adding exclusions);
+        changing the fix itself would need a new verification run. Same proof, same expiry, same
+        embedding (the retrieval text doesn't change), a fresh per-version HMAC secret."""
+        if not reason or not reason.strip():
+            raise ValueError("a reason is required")
+        added = [x.strip() for x in excludes if x and x.strip()]
+        if not added:
+            raise ValueError("give at least one exclusion to add")
+        old = self._owned(principal, memory_id)
+        if old["status"] != "active":
+            raise ValueError(f"only an active memory can be corrected (this one is {old['status']})")
+        old = self.memories.find_one({"_id": memory_id})  # with the embedding, to copy it
+        merged = list(dict.fromkeys([*old.get("applicability", {}).get("excludes", []), *added]))
+
+        new_version = old["version"] + 1
+        new_id = f"{old['lineageId']}_v{new_version}"
+        now = utc_now()
+        new = {**old, "_id": new_id, "version": new_version, "supersedes": memory_id, "status": "active",
+               "applicability": {**old.get("applicability", {}), "excludes": merged},
+               "hmacSecret": secrets.token_hex(32), "createdAt": now,
+               "correction": {"by": _actor(principal)["id"], "reason": reason.strip(), "at": now,
+                              "addedExcludes": added}}
+
+        # Retire the old version first, atomically (only if still active), then add the new one.
+        res = self.memories.update_one({"_id": memory_id, "status": "active"}, {"$set": {"status": "superseded"}})
+        if not res.modified_count:
+            raise ValueError("the memory changed meanwhile; reload and try again")
+        try:
+            self.memories.insert_one(new)
+        except Exception:
+            self.memories.update_one({"_id": memory_id}, {"$set": {"status": "active"}})  # roll back
+            raise
+
+        actor = _actor(principal)
+        audit.log_many(self.db, [
+            {"tenantId": principal.tenant_id, "memoryId": memory_id, "version": old["version"], "event": "corrected",
+             "actor": actor, "runId": None, "reason": reason.strip(), "contentHash": audit.content_hash(old),
+             "details": {"supersededBy": new_id, "addedExcludes": added}},
+            {"tenantId": principal.tenant_id, "memoryId": new_id, "version": new_version, "event": "corrected",
+             "actor": actor, "runId": None, "reason": reason.strip(), "contentHash": audit.content_hash(new),
+             "details": {"supersedes": memory_id, "addedExcludes": added}},
+        ])
+        return self.to_card(new)
+
+    def history(self, principal: Principal, memory_id: str) -> list[dict]:
+        """GET /memories/{id}/audit: every audit event of this memory's whole lineage, oldest first
+        ("who read memory X?"). Admin of the owner team. After Forget, the tombstone history is still
+        readable by an admin of the team that forgot it. Events never contain memory content."""
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(principal)}, {"lineageId": 1, "ownerTeamId": 1})
+        if doc is not None:
+            if doc["ownerTeamId"] != principal.team_id:
+                raise PermissionError("only an admin of the owner team can read the history")
+            ids = [d["_id"] for d in self.memories.find({"lineageId": doc["lineageId"]}, {"_id": 1})]
+        else:
+            tomb = self.db.memory_audit.find_one({"memoryId": memory_id, "event": "forgotten",
+                                                  "tenantId": principal.tenant_id})
+            if tomb is None or not tomb["actor"]["id"].endswith(f"@{principal.team_id}"):
+                raise LookupError(memory_id)
+            lineage = tomb.get("details", {}).get("lineageId", memory_id)
+            ids = self.db.memory_audit.distinct("memoryId", {"tenantId": principal.tenant_id, "event": "forgotten",
+                                                             "details.lineageId": lineage}) or [memory_id]
+        events = self.db.memory_audit.find({"tenantId": principal.tenant_id, "memoryId": {"$in": ids}},
+                                           {"_id": 0, "tenantId": 0}).sort("at", 1)
+        return list(events)
 
     @staticmethod
     def printable_scope(p: Principal) -> dict:
