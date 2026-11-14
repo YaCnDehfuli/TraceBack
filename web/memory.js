@@ -315,7 +315,11 @@
   async function refreshMemories() {
     const slot = document.getElementById("memory-slot");
     if (!slot) return;
-    const ours = () => !slot.firstElementChild || slot.firstElementChild.classList.contains("tb-list");
+    // A run is on screen (app.js sets #run-panel[data-live] to live / replay / done): the slot belongs
+    // to the run, even when it is empty ("Nothing your team may see"). Never fill it then (#76).
+    const runOnScreen = () => !!document.getElementById("run-panel")?.dataset.live;
+    const ours = () => !runOnScreen() &&
+      (!slot.firstElementChild || slot.firstElementChild.classList.contains("tb-list"));
     if (!ours()) return;
     let list;
     try {
