@@ -1,0 +1,98 @@
+[
+  {
+    "memoryId": "placebo_export_timeout",
+    "version": 1,
+    "ownerTeamId": "team-payments",
+    "repositoryId": "billing-exports",
+    "rank": 1,
+    "score": 0.9,
+    "match": "strong",
+    "source": "vector",
+    "retrievalText": "The nightly invoice export job is being killed by the worker before it finishes, and finance reports an empty CSV the next morning. | WorkerTimeout; export exceeded the 30 second worker limit; during GET /exports/invoices.csv; 41,800 invoices for one tenant; at app/exports.py:22 in build_csv",
+    "confirmedCause": "The export loads every invoice for the tenant into memory before writing the first row.",
+    "resolutionSummary": "Stream the export instead of building it in memory: read invoices in pages of 500 sorted by _id, write each page to the response as it arrives, keep the same CSV columns.",
+    "resolutionPatch": {
+      "path": "app/exports.py",
+      "newContent": "import csv\nimport io\n\nfrom fastapi import APIRouter\nfrom fastapi.responses import StreamingResponse\n\nfrom .db import get_db\n\nrouter = APIRouter()\nPAGE = 500\nCOLUMNS = [\"invoice_id\", \"customer_id\", \"amount\", \"issued_at\"]\n\n\ndef _pages(tenant_id: str):\n    last = None\n    while True:\n        query = {\"tenant_id\": tenant_id, **({\"_id\": {\"$gt\": last}} if last else {})}\n        page = list(get_db().invoices.find(query).sort(\"_id\", 1).limit(PAGE))\n        if not page:\n            return\n        last = page[-1][\"_id\"]\n        yield page\n\n\ndef _rows(tenant_id: str):\n    buf = io.StringIO()\n    writer = csv.DictWriter(buf, fieldnames=COLUMNS)\n    writer.writeheader()\n    for page in _pages(tenant_id):\n        writer.writerows(page)\n        yield buf.getvalue()\n        buf.seek(0)\n        buf.truncate(0)\n\n\n@router.get(\"/exports/invoices.csv\")\ndef build_csv(tenant_id: str) -> StreamingResponse:\n    return StreamingResponse(_rows(tenant_id), media_type=\"text/csv\")\n"
+    },
+    "applicability": {
+      "conditions": {},
+      "excludes": []
+    },
+    "anchors": [],
+    "expiresAt": "2027-01-01T00:00:00Z",
+    "stale": false
+  },
+  {
+    "memoryId": "placebo_token_clock_skew",
+    "version": 1,
+    "ownerTeamId": "team-payments",
+    "repositoryId": "auth-service",
+    "rank": 1,
+    "score": 0.9,
+    "match": "strong",
+    "source": "vector",
+    "retrievalText": "Users on one region are signed out right after logging in; the next request is rejected with HTTP 401 and the browser loops back to the login page. | ImmatureSignatureError; token not yet valid (iat in the future); during GET /account; 2 hosts, clocks 4 s apart; at app/tokens.py:18 in decode",
+    "confirmedCause": "Token validation allows no clock leeway, so a host whose clock is a few seconds behind rejects fresh tokens.",
+    "resolutionSummary": "Allow a small clock leeway when validating tokens: accept iat and nbf up to 10 seconds in the future, keep expiry checks strict, and log the observed skew.",
+    "resolutionPatch": {
+      "path": "app/tokens.py",
+      "newContent": "\"\"\"Session token encode and decode.\"\"\"\n\nimport logging\nimport time\n\nimport jwt\n\nfrom .settings import settings\n\nlog = logging.getLogger(\"auth.tokens\")\nLEEWAY_SECONDS = 10\nALGORITHM = \"HS256\"\n\n\ndef encode(user_id: str, ttl: int = 3600) -> str:\n    now = int(time.time())\n    claims = {\"sub\": user_id, \"iat\": now, \"nbf\": now, \"exp\": now + ttl}\n    return jwt.encode(claims, settings.signing_key, algorithm=ALGORITHM)\n\n\ndef decode(token: str) -> dict:\n    claims = jwt.decode(\n        token,\n        settings.signing_key,\n        algorithms=[ALGORITHM],\n        leeway=LEEWAY_SECONDS,\n        options={\"require\": [\"sub\", \"iat\", \"exp\"]},\n    )\n    skew = claims[\"iat\"] - int(time.time())\n    if skew > 0:\n        log.info(\"token issued %ss in the future (clock skew)\", skew)\n    return claims\n\n\ndef user_from(header: str | None) -> str | None:\n    if not header or not header.startswith(\"Bearer \"):\n        return None\n    return decode(header.removeprefix(\"Bearer \"))[\"sub\"]\n"
+    },
+    "applicability": {
+      "conditions": {},
+      "excludes": []
+    },
+    "anchors": [],
+    "expiresAt": "2027-01-01T00:00:00Z",
+    "stale": false
+  },
+  {
+    "memoryId": "placebo_search_unicode",
+    "version": 1,
+    "ownerTeamId": "team-payments",
+    "repositoryId": "catalog-search",
+    "rank": 1,
+    "score": 0.9,
+    "match": "strong",
+    "source": "vector",
+    "retrievalText": "Customers searching for accented product names such as cafe creme get no results, although the products are listed in the catalog and visible on the page. | EmptyResult; 0 hits for a query that matches 12 products; during GET /search; titles stored NFD, queries NFC; at app/normalize.py:9 in key",
+    "confirmedCause": "Titles are indexed in decomposed Unicode while queries arrive composed, so the same word never compares equal.",
+    "resolutionSummary": "Normalize both sides the same way: apply NFKC and casefold to titles at index time and to queries at search time, then rebuild the search keys once.",
+    "resolutionPatch": {
+      "path": "app/normalize.py",
+      "newContent": "\"\"\"Search key normalization, used for indexing and for queries.\"\"\"\n\nimport re\nimport unicodedata\n\nfrom .db import get_db\n\n_SPACES = re.compile(r\"\\s+\")\n\n\ndef key(text: str) -> str:\n    \"\"\"One canonical form for titles and queries alike.\"\"\"\n    text = unicodedata.normalize(\"NFKC\", text or \"\")\n    text = text.casefold().strip()\n    return _SPACES.sub(\" \", text)\n\n\ndef index_product(product: dict) -> dict:\n    product = dict(product)\n    product[\"search_key\"] = key(product.get(\"title\", \"\"))\n    return product\n\n\ndef rebuild_keys() -> int:\n    \"\"\"Recompute search keys for every product. Run once after deploying.\"\"\"\n    products = get_db().products\n    changed = 0\n    for doc in products.find({}, {\"title\": 1}):\n        new = index_product(doc)\n        products.update_one(\n            {\"_id\": doc[\"_id\"]},\n            {\"$set\": {\"search_key\": new[\"search_key\"]}},\n        )\n        changed += 1\n    return changed\n"
+    },
+    "applicability": {
+      "conditions": {},
+      "excludes": []
+    },
+    "anchors": [],
+    "expiresAt": "2027-01-01T00:00:00Z",
+    "stale": false
+  },
+  {
+    "memoryId": "placebo_thumbnail_memory",
+    "version": 1,
+    "ownerTeamId": "team-payments",
+    "repositoryId": "media-uploads",
+    "rank": 1,
+    "score": 0.9,
+    "match": "strong",
+    "source": "vector",
+    "retrievalText": "Uploading large receipt photos makes the media service restart, and the upload page shows a gateway error after about twenty seconds of waiting. | MemoryError; worker killed at 2 GB resident memory; during POST /uploads/receipt; 48 megapixel JPEG; at app/thumbnails.py:14 in make_thumbnail",
+    "confirmedCause": "The thumbnail step decodes the full-resolution image into memory before shrinking it.",
+    "resolutionSummary": "Let the decoder shrink while it reads: call draft() before load so the JPEG decodes at reduced size, then thumbnail() to 512 px, and reject files over 40 MB.",
+    "resolutionPatch": {
+      "path": "app/thumbnails.py",
+      "newContent": "\"\"\"Receipt thumbnails.\"\"\"\n\nimport io\n\nfrom fastapi import HTTPException, UploadFile\nfrom PIL import Image\n\nMAX_BYTES = 40 * 1024 * 1024\nSIZE = (512, 512)\n\n\ndef _read_limited(upload: UploadFile) -> bytes:\n    data = upload.file.read(MAX_BYTES + 1)\n    if len(data) > MAX_BYTES:\n        raise HTTPException(413, \"Receipt image is larger than 40 MB.\")\n    return data\n\n\ndef make_thumbnail(upload: UploadFile) -> bytes:\n    data = _read_limited(upload)\n    with Image.open(io.BytesIO(data)) as img:\n        if img.format == \"JPEG\":\n            img.draft(\"RGB\", (SIZE[0] * 2, SIZE[1] * 2))\n        img = img.convert(\"RGB\")\n        img.thumbnail(SIZE)\n        out = io.BytesIO()\n        img.save(out, format=\"JPEG\", quality=85, optimize=True)\n    return out.getvalue()\n\n\ndef thumbnail_name(original: str) -> str:\n    stem = original.rsplit(\".\", 1)[0] or \"receipt\"\n    return f\"{stem}_thumb.jpg\"\n"
+    },
+    "applicability": {
+      "conditions": {},
+      "excludes": []
+    },
+    "anchors": [],
+    "expiresAt": "2027-01-01T00:00:00Z",
+    "stale": false
+  }
+]
