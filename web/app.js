@@ -68,21 +68,42 @@
   const teamName = (teamId) => TEAM_NAMES[teamId] || teamId || "another team";
   const setStatus = (text) => { $("status").textContent = text; };
 
+  // Lucide icons: <i data-lucide="name"> placeholders, swapped for SVGs under `root` only.
+  const icon = (name) => el("i", { "data-lucide": name });
+  const drawIcons = (root) => { if (window.lucide) window.lucide.createIcons({ root }); };
+
+  // One patch line: Prism-highlighted Python (escaped text if Prism is missing) plus our "from memory" tag.
+  const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function highlightLines(code) {
+    const html = window.Prism && Prism.languages.python ? Prism.highlight(code, Prism.languages.python, "python") : escapeHtml(code);
+    return html.split("\n");
+  }
+  function codeLine(html, isMemory) {
+    const line = el("span", { class: isMemory ? "line from-memory" : "line" });
+    line.innerHTML = html || " ";
+    if (isMemory) line.appendChild(el("span", { class: "tag" }, icon("brain"), "from memory"));
+    return line;
+  }
+
+  const ANSWER_ICONS = { ok: "circle-check", warn: "triangle-alert", bad: "circle-x" };
   function setAnswer(text, tone) {
     const answer = $("answer");
-    answer.textContent = text;
+    answer.replaceChildren(icon(ANSWER_ICONS[tone] || "scan-search"), el("span", {}, text));
     answer.className = tone || "";
+    drawIcons(answer);
   }
 
-  function setOutcome(text, tone) {
+  function setOutcome(text, tone, iconName = "badge-check") {
     const outcome = $("outcome");
-    outcome.textContent = text || "";
+    outcome.replaceChildren(...(text ? [icon(iconName), text] : []));
     outcome.className = text ? tone : "";
+    drawIcons(outcome);
   }
 
-  function addStep(icon, text, { tone = "", sub = null, extra = null } = {}) {
-    const li = el("li", { class: tone }, el("span", { class: "icon" }, icon), el("div", {}, text, sub ? el("span", { class: "sub" }, sub) : null, extra));
+  function addStep(iconName, text, { tone = "", sub = null, extra = null } = {}) {
+    const li = el("li", { class: tone }, el("span", { class: "icon" }, icon(iconName)), el("div", {}, text, sub ? el("span", { class: "sub" }, sub) : null, extra));
     $("timeline").appendChild(li);
+    drawIcons(li);
     li.scrollIntoView({ block: "nearest", behavior: "smooth" });
     return li;
   }
@@ -137,21 +158,31 @@
     } catch (_) {
       node = null;
     }
-    if (!node || node.textContent.includes("TODO")) node = fallbackCard(memory);
+    // memory.js's stub returns a bare text div; treat that like "not implemented yet" too.
+    if (!node || node.textContent.includes("TODO") || !node.firstElementChild) node = fallbackCard(memory);
     const slot = $("memory-slot");
     slot.innerHTML = "";
     slot.appendChild(node);
+    drawIcons(slot);
   }
 
   function fallbackCard(memory) {
+    const owner = teamName(memory.ownerTeamId);
     const conditions = state.preconditions.length
-      ? el("ul", {}, ...state.preconditions.map((r) => el("li", {}, `${r.held ? "✓" : "✗"} ${r.check.replaceAll("_", " ")}: ${r.actual ?? "unknown"}`)))
+      ? el("ul", { class: "conditions" }, ...state.preconditions.map((r) => el("li", { class: r.held ? "ok" : "bad" },
+        el("span", { class: "mark" }, icon(r.held ? "check" : "x")),
+        el("span", {}, r.check.replaceAll("_", " ")),
+        el("code", {}, String(r.actual ?? "unknown")))))
       : null;
-    return el("div", { class: "memory-fallback" },
-      el("span", { class: "owner" }, `Owner: ${teamName(memory.ownerTeamId)}`),
-      el("h3", {}, memory.title || "Memory"),
-      el("p", {}, `Visible to: ${teamName(memory.ownerTeamId)} only · match: ${memory.match || "n/a"}`),
-      conditions);
+    const teamClass = TEAM_NAMES[memory.ownerTeamId] ? memory.ownerTeamId : "";
+    return el("div", { class: `memory-fallback ${teamClass}` },
+      el("div", { class: "memory-head" },
+        el("span", { class: "chip owner" }, icon("users"), `Owner: ${owner}`),
+        memory.match ? el("span", { class: `chip match ${memory.match}` }, `Match: ${memory.match}`) : null),
+      el("div", { class: "memory-body" },
+        el("h3", {}, memory.title || "Memory"),
+        el("p", { class: "visible" }, icon("lock"), `Visible to: ${owner} only`),
+        conditions));
   }
 
   // ------------------------------------------------------------------ rendering one event
@@ -162,7 +193,7 @@
       case "run_started": {
         if (p.caseId && CASES[p.caseId]) $("incident-title").textContent = CASES[p.caseId].title;
         const mode = p.memoryMode && p.memoryMode !== "real" ? ` · memory ${p.memoryMode}` : "";
-        addStep("▶", `Run started for ${teamName(p.teamId)}${mode}`, { tone: "minor" });
+        addStep("play", `Run started for ${teamName(p.teamId)}${mode}`, { tone: "minor" });
         break;
       }
       case "observation": {
@@ -170,16 +201,16 @@
         const what = o.errorCode === "11000"
           ? `Observed duplicate key error (E11000) on ${o.dupKeyField || "a unique index"}`
           : `Observed ${o.exceptionType || "an error"}`;
-        addStep("🔎", what, { sub: o.summary || null });
+        addStep("scan-search", what, { sub: o.summary || null });
         break;
       }
       case "recall": {
         if (!p.count) {
-          addStep("∅", "No memories available to your team", { tone: "memory", sub: "Investigating from scratch." });
+          addStep("search-x", "No memories available to your team", { tone: "memory", sub: "Investigating from scratch." });
           setAnswer("Not seen before by your team. Investigating from scratch.", "idle");
         } else {
           const ref = p.memories[0];
-          addStep("◆", `Recalled ${p.count} ${p.count === 1 ? "memory" : "memories"}`, {
+          addStep("brain", `Recalled ${p.count} ${p.count === 1 ? "memory" : "memories"}`, {
             tone: "memory",
             sub: `Owned by ${teamName(ref.ownerTeamId)} · match: ${ref.match || "n/a"}`,
           });
@@ -191,11 +222,11 @@
         state.preconditions = p.results || [];
         const owner = teamName(p.memory && p.memory.ownerTeamId);
         if (p.held === p.total) {
-          addStep("✓", `Conditions ${p.held}/${p.total} hold`, { tone: "ok", sub: state.preconditions.map((r) => r.check.replaceAll("_", " ")).join(" · ") });
+          addStep("shield-check", `Conditions ${p.held}/${p.total} hold`, { tone: "ok", sub: state.preconditions.map((r) => r.check.replaceAll("_", " ")).join(" · ") });
           setAnswer(`Seen before: ${owner} fixed this, and its conditions ${p.held}/${p.total} hold.`, "ok");
           state.decision = "used";
         } else {
-          addStep("✗", p.notAppliedReason || `Conditions ${p.held}/${p.total} hold: memory not applied`, { tone: "bad" });
+          addStep("shield-x", p.notAppliedReason || `Conditions ${p.held}/${p.total} hold: memory not applied`, { tone: "bad" });
           setAnswer(p.notAppliedReason || "A similar memory exists, but it doesn't apply here.", "warn");
           state.decision = "rejected";
         }
@@ -205,18 +236,15 @@
       case "tool_call":
         break; // shown together with its result
       case "tool_result":
-        addStep("·", `${p.tool.replaceAll("_", " ")}: ${p.summary}`, { tone: "minor" });
+        addStep("terminal", `${p.tool.replaceAll("_", " ")}: ${p.summary}`, { tone: "minor" });
         break;
       case "patch_proposed": {
         state.attempt = p.attempt;
         const highlight = new Set(p.fromMemoryLines || []);
-        const lines = ((p.patch && p.patch.newContent) || "").replace(/\n$/, "").split("\n");
-        const pre = el("pre", { class: "patch" }, ...lines.map((text, i) => {
-          const isMemory = highlight.has(i + 1);
-          return el("span", { class: isMemory ? "line from-memory" : "line" }, text || " ", isMemory ? el("span", { class: "tag" }, "from memory") : null);
-        }));
+        const lines = highlightLines(((p.patch && p.patch.newContent) || "").replace(/\n$/, ""));
+        const pre = el("pre", { class: "patch" }, ...lines.map((html, i) => codeLine(html, highlight.has(i + 1))));
         const sub = p.fromMemory ? `Uses ${teamName(p.fromMemory.ownerTeamId)}'s proven fix` : null;
-        addStep("✎", `Fix proposed for ${(p.patch && p.patch.path) || "a file"} (attempt ${p.attempt})`, { sub, extra: pre });
+        addStep("file-pen-line", `Fix proposed for ${(p.patch && p.patch.path) || "a file"} (attempt ${p.attempt})`, { sub, extra: pre });
         break;
       }
       case "verification": {
@@ -224,12 +252,12 @@
         const tests = r.tests || [];
         const passed = tests.filter((t) => t.passed).length;
         if (r.status === "passed") {
-          addStep("✓", `Tests ${passed}/${tests.length} pass`, { tone: "ok", sub: "Failed before the fix, passes after. Only the runner's results count." });
+          addStep("flask-conical", `Tests ${passed}/${tests.length} pass`, { tone: "ok", sub: "Failed before the fix, passes after. Only the runner's results count." });
         } else if (r.status === "inconclusive") {
-          addStep("?", "Verification inconclusive", { tone: "warn", sub: r.detail || "Our test infrastructure broke, not the fix." });
+          addStep("circle-help", "Verification inconclusive", { tone: "warn", sub: r.detail || "Our test infrastructure broke, not the fix." });
         } else {
           const failing = tests.filter((t) => !t.passed);
-          addStep("✗", `Tests ${passed}/${tests.length} pass (attempt ${p.attempt})`, {
+          addStep("flask-conical", `Tests ${passed}/${tests.length} pass (attempt ${p.attempt})`, {
             tone: "bad",
             sub: failing.map((t) => `${t.name}${t.detail ? `: ${t.detail}` : ""}`).join(" · "),
           });
@@ -238,7 +266,7 @@
       }
       case "memory_outcome": {
         const tone = p.outcome === "refused" || p.outcome === "disputed" ? "bad" : "memory";
-        addStep("◆", p.message || `Memory ${p.outcome}`, { tone });
+        addStep(tone === "bad" ? "ban" : "receipt", p.message || `Memory ${p.outcome}`, { tone });
         if (p.memory) showMemory(p.memory);
         break;
       }
@@ -247,19 +275,19 @@
           setOutcome(`Verified on attempt ${p.attempt || 1}`, p.attempt && p.attempt > 1 ? "warn" : "ok");
           setAnswer(p.summary || "Fix verified.", p.attempt && p.attempt > 1 ? "warn" : "ok");
         } else if (p.outcome === "escalated") {
-          setOutcome("Escalated to a human, with evidence", "warn");
+          setOutcome("Escalated to a human, with evidence", "warn", "user-round");
           if (p.summary) setAnswer(p.summary, "warn");
         } else {
-          setOutcome("Unresolved within budget", "bad");
+          setOutcome("Unresolved within budget", "bad", "circle-x");
           if (p.summary) setAnswer(p.summary, "bad");
         }
         break;
       }
       case "error":
-        addStep("!", p.message || "Error", { tone: "bad" });
+        addStep("circle-alert", p.message || "Error", { tone: "bad" });
         break;
       default:
-        addStep("·", event.type, { tone: "minor" });
+        addStep("dot", event.type, { tone: "minor" });
     }
   }
 
@@ -347,16 +375,17 @@
     return out;
   }
 
-  function compareColumn(heading, s) {
+  function compareColumn(heading, s, variant) {
     const finalAttempt = s.attempts[s.attempts.length - 1];
     const tone = s.outcome === "verified" ? (s.attempts.length > 1 ? "warn" : "ok") : "bad";
-    return el("div", { class: "compare-col" },
-      el("h3", {}, heading),
+    return el("article", { class: `compare-col ${variant}` },
+      el("h3", {}, icon(variant === "with" ? "brain" : "circle-dashed"), heading),
       el("ol", {}, ...s.attempts.map((a) => el("li", { class: a.failing.length ? "bad" : "ok" },
+        icon(a.failing.length ? "circle-x" : "circle-check"),
         `Attempt ${a.attempt}: tests ${a.passed}/${a.total}`,
         a.failing.length ? el("span", { class: "sub" }, `Failed: ${a.failing.join(", ")}`) : null))),
       s.memoryLines.length
-        ? el("pre", { class: "patch" }, ...s.memoryLines.map((t) => el("span", { class: "line from-memory" }, t, el("span", { class: "tag" }, "from memory"))))
+        ? el("pre", { class: "patch" }, ...s.memoryLines.map((t) => codeLine(highlightLines(t.trim())[0], true)))
         : null,
       el("div", { class: `badge ${tone}` }, finalAttempt ? `${s.outcome} on attempt ${finalAttempt.attempt}` : s.outcome || "no result"),
       el("p", { class: "sub" }, `${s.steps} steps · ${s.summary}`));
@@ -373,9 +402,10 @@
     if (!withMemory || !withoutMemory) {
       box.appendChild(el("p", { class: "sub" }, `Compare needs two finished runs of case ${caseId}: one with memory and one without (rerun it after Forget).`));
     } else {
-      box.appendChild(compareColumn("With memory", withMemory));
-      box.appendChild(compareColumn("Without memory", withoutMemory));
+      box.appendChild(compareColumn("With memory", withMemory, "with"));
+      box.appendChild(compareColumn("Without memory", withoutMemory, "without"));
     }
+    drawIcons(box);
     box.hidden = false;
     box.scrollIntoView({ behavior: "smooth" });
   }
@@ -442,6 +472,7 @@
   };
 
   document.addEventListener("DOMContentLoaded", async () => {
+    drawIcons(document.body); // the static icons in index.html
     setupIdentity();
     try {
       const health = await (await fetch("/health")).json();
