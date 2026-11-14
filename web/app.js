@@ -275,6 +275,7 @@
   function resetView(caseId) {
     $("timeline").innerHTML = "";
     $("handoff")?.remove();
+    $("live-link")?.remove();
     showGhosts();
     $("memory-slot").innerHTML = "";
     delete $("memory-slot").dataset.stamp;
@@ -421,6 +422,18 @@
   function clearVerdict() {
     setOutcome("");
     $("handoff")?.remove();
+    $("live-link")?.remove();
+  }
+
+  // A verified run links to the live practice app (scripts/live_app.py, port 8100): the same deliveries
+  // against the original code and against this run's verified fix.
+  function showLiveLink(caseId, runId) {
+    $("live-link")?.remove();
+    if (!caseId || !runId) return;
+    const href = `http://127.0.0.1:8100/?case=${encodeURIComponent(caseId)}&run=${encodeURIComponent(runId)}`;
+    const a = el("a", { id: "live-link", href, target: "_blank", rel: "noopener" }, icon("external-link"), "See it in the practice app");
+    $("outcome").after(a);
+    drawIcons(a);
   }
 
   function toast(text, iconName) {
@@ -555,6 +568,7 @@
           setAnswer(p.summary || "Fix verified.", tone);
           setOutcome(`Verified on attempt ${p.attempt || 1}`, tone);
           if (state.memoryRef && !state.stamp) stamp("proven");
+          showLiveLink(state.caseId, event.runId);
         } else if (p.outcome === "escalated") {
           if (p.summary) setAnswer(p.summary, "warn");
           setOutcome("Escalated to a human, with evidence", "warn", "user-round");
