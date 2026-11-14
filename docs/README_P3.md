@@ -15,7 +15,7 @@ Two small FastAPI services stand in for "the code a team is debugging". Each is 
 
 **The planted bug.** A payment provider retries a notification it thinks failed. The handler inserts the event a second time, and the unique index raises MongoDB's `E11000 duplicate key` error. The service answers HTTP 500, the provider retries again, and so on.
 
-**Why a plain fix isn't enough.** Payments has a team rule: a replayed event must not be credited twice **and** must be recorded with `ledger.mark_replayed(event_id)`. The rule is written only in `fixture_app/payments-webhooks/docs/RUNBOOK.md`, section 6.2, under month-end reconciliation. It is not in the code, not in a comment and not in a docstring. A model knows the generic "catch the duplicate and return 200" fix. It can't know this rule unless it reads the runbook or **remembers** it from a fix that was proven before. That is the gap the memory fills.
+**Why a plain fix isn't enough.** Payments has a team rule: a replayed event must not be credited twice **and** must be recorded with `ledger.mark_replayed(event_id)`. The rule is written only in `fixture_app/payments-webhooks/docs/operations/month-end-close.md`, section 5.2, a realistic month-end procedure that the runbook links to. It is not in the code, not in a comment and not in a docstring. A model knows the generic "catch the duplicate and return 200" fix. It can't know this rule unless it reads the runbook or **remembers** it from a fix that was proven before. That is the gap the memory fills.
 
 ### The trusted tests, and why each exists
 

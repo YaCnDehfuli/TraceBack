@@ -353,13 +353,40 @@ class AtlasMemoryStore:
         return [self.to_card(doc) for doc in docs]
 
     def unscoped_search(self, principal: Principal, q: str, k: int = 5) -> list[dict]:
-        """Fence comparison only: the same search WITHOUT tenantId/readableBy. Admin only, never given
-        to the agent or the voice agent. Returns id, owner team and score only, never content."""
-        filt = {"status": "active", "expiresAt": {"$gt": utc_now()}, "embeddingVersion": EMBEDDING_VERSION}
+        """Fence comparison only: the same search WITHOUT the team filter (readableBy). The tenant filter
+        stays, so it can never reach another company. Admin only, never given to the agent.
+        Returns id, owner team and score only, never content."""
+        filt = {"tenantId": principal.tenant_id, "status": "active", "expiresAt": {"$gt": utc_now()},
+                "embeddingVersion": EMBEDDING_VERSION}
         hits = [h for h in self._vector(embed_one(q, "query"), filt, limit=k) if h["score"] >= MIN_SCORE]
         audit.log(self.db, tenant_id=principal.tenant_id, event="unscoped_compared", actor=_actor(principal),
                   details={"memoryIds": [h["_id"] for h in hits]})
         return hits
+
+    def unscoped_cards(self, principal: Principal, q: str, k: int = 5) -> list[MemoryCard]:
+        """unscoped_search as cards. Memories the caller's team may NOT read are redacted: owner, status
+        and match only, no title or conditions, so the comparison itself leaks nothing."""
+        hits = self.unscoped_search(principal, q, k)
+        docs = {d["_id"]: d for d in self.memories.find({"_id": {"$in": [h["_id"] for h in hits]}},
+                                                         {"embedding": 0, "hmacSecret": 0})}
+        cards = []
+        for h in hits:
+            doc = docs.get(h["_id"])
+            if doc is None:  # deleted since the index saw it
+                continue
+            doc["_match"] = "strong" if h["score"] >= STRONG_MATCH else "weak"
+            card = self.to_card(doc)
+            if principal.team_id not in doc["readableBy"]:
+                owner = doc["ownerTeamId"].removeprefix("team-").capitalize()
+                card = card.model_copy(update={"title": f"Hidden: a {owner} memory", "applicability": Applicability(),
+                                               "readable_by": [doc["ownerTeamId"]]})
+            cards.append(card)
+        return cards
+
+    @staticmethod
+    def printable_scope(p: Principal) -> dict:
+        """The $vectorSearch pre-filter as shown on screen in the Fence view."""
+        return {**AtlasMemoryStore.scope(p, utc_now()), "expiresAt": {"$gt": "now"}}
 
     # ------------------------------------------------------------------ cards (UI)
 

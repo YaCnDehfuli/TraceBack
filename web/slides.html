@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traceback · Memory with receipts · Slides</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0a0a'/%3E%3Cpath d='M10 11h12M16 11v11' stroke='%23fff' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+  <!-- Demo deck. Keys: Right / Space next, Left back, 1-6 jump, F fullscreen. Standalone: no Pico, no CDN. -->
+  <header class="chrome">
+    <div class="brand">
+      <span class="logo"><i data-lucide="receipt-text"></i></span>
+      <div><strong>Traceback</strong><small>Memory with receipts</small></div>
+    </div>
+    <span id="counter" class="counter" aria-live="polite"></span>
+  </header>
+
+  <main id="deck" aria-label="Slides">
+
+    <!-- 1 · Title -->
+    <section class="slide s-title" data-title="Title">
+      <div class="title-copy">
+        <p class="eyebrow" data-r style="--i:0">Live demo</p>
+        <h1 data-r style="--i:1">Traceback</h1>
+        <p class="tagline" data-r style="--i:2">Memory with receipts</p>
+        <p class="lede" data-r style="--i:3">An AI debugging agent whose memory is <b>proven</b>, <b>team-scoped</b>, <b>expiring</b> and <b>forgettable</b>.</p>
+        <p class="team" data-r style="--i:4"><span>Yasin</span><i>·</i><span>Elham</span><i>·</i><span>Sepehr</span></p>
+        <p class="built" data-r style="--i:5">Built today at Agents in Context Toronto</p>
+      </div>
+      <div class="title-art" data-r style="--i:3" aria-hidden="true">
+        <div class="rc-wrap tilt">
+          <div class="rc">
+            <span class="stamp proven">Proven</span>
+            <p class="rc-head">Memory · Payments</p>
+            <h3 class="rc-title">Duplicate webhook<br>crashes payments</h3>
+            <ul class="rc-rows">
+              <li><span class="k">Proof</span><span class="dots"></span><span class="v ok">fail → pass</span></li>
+              <li><span class="k">Visible to</span><span class="dots"></span><span class="v">Payments</span></li>
+              <li><span class="k">Expires</span><span class="dots"></span><span class="v">yes</span></li>
+              <li><span class="k">Forget</span><span class="dots"></span><span class="v">real</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · Story -->
+    <section class="slide s-story" data-title="The story">
+      <p class="eyebrow" data-r style="--i:0">The story</p>
+      <h2 class="big" data-r style="--i:1"><span class="who dana">Dana</span> fixed this in March,<br>then left in June.</h2>
+      <h2 class="big" data-r style="--i:2">At 3 a.m. the same alert pages <span class="who sam">Sam</span>.</h2>
+      <div class="problem" data-r style="--i:3">
+        <p class="label">The problem</p>
+        <p class="claim">Agent memory is data someone has to answer for.</p>
+        <ul class="pills">
+          <li><i data-lucide="trash-2"></i>Deleting must really delete</li>
+          <li><i data-lucide="lock"></i>A leak between teams is a compliance failure</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3 · Three receipts -->
+    <section class="slide s-receipts" data-title="Memory with receipts">
+      <p class="eyebrow" data-r style="--i:0">Memory with receipts</p>
+      <h2 class="head" data-r style="--i:1">Every memory gets three receipts.</h2>
+      <div class="three">
+        <figure data-r style="--i:2">
+          <div class="rc-wrap"><div class="rc">
+            <span class="stamp proven">Proven</span>
+            <p class="rc-head">01 · When written</p>
+            <h3 class="rc-title">Proof</h3>
+            <ul class="rc-rows">
+              <li><span class="k">Tests before</span><span class="dots"></span><span class="v bad">FAIL</span></li>
+              <li><span class="k">Tests after</span><span class="dots"></span><span class="v ok">PASS</span></li>
+              <li><span class="k">Write</span><span class="dots"></span><span class="v">allowed</span></li>
+              <li class="muted"><span class="k">No proof</span><span class="dots"></span><span class="v">refused</span></li>
+            </ul>
+          </div></div>
+          <figcaption>Tests failed before, passed after. The database refuses anything else.</figcaption>
+        </figure>
+        <figure data-r style="--i:3">
+          <div class="rc-wrap"><div class="rc">
+            <p class="rc-head">02 · When used</p>
+            <h3 class="rc-title">Influence</h3>
+            <pre class="code"><span class="ln dim">except DuplicateKeyError:</span><span class="ln mem">ledger.mark_replayed(event.id)</span><span class="ln dim">return {"ok": True}</span></pre>
+            <p class="tag"><i data-lucide="history"></i>from memory</p>
+            <ul class="rc-rows">
+              <li><span class="k">Owner</span><span class="dots"></span><span class="v">Payments</span></li>
+            </ul>
+          </div></div>
+          <figcaption>The exact fix line that came from memory.</figcaption>
+        </figure>
+        <figure data-r style="--i:4">
+          <div class="rc-wrap"><div class="rc void">
+            <span class="stamp void">Void</span>
+            <p class="rc-head">03 · When forgotten</p>
+            <h3 class="rc-title">Tombstone</h3>
+            <ul class="rc-rows">
+              <li><span class="k">Forgotten by</span><span class="dots"></span><span class="v">Payments admin</span></li>
+              <li><span class="k">Reason</span><span class="dots"></span><span class="v">on record</span></li>
+              <li><span class="k">Content</span><span class="dots"></span><span class="v"><span class="redact"></span></span></li>
+            </ul>
+          </div></div>
+          <figcaption>Who forgot it, and why. No content left.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 4 · How it works -->
+    <section class="slide s-how" data-title="How it works">
+      <p class="eyebrow" data-r style="--i:0">How it works</p>
+      <h2 class="head" data-r style="--i:1">From alert to receipt.</h2>
+      <ol class="flow">
+        <li data-r style="--i:2"><span class="n"><i data-lucide="bell"></i></span><b>Incident</b><small>Alert and log</small></li>
+        <li data-r style="--i:3"><span class="n"><i data-lucide="scan-search"></i></span><b>Observe</b><small>E11000 duplicate key</small></li>
+        <li data-r style="--i:4" class="atlas"><span class="n"><i data-lucide="database"></i></span><b>Recall</b><small>Atlas Vector Search, team pre-filter</small></li>
+        <li data-r style="--i:5"><span class="n"><i data-lucide="list-checks"></i></span><b>Check</b><small>Conditions, in code</small></li>
+        <li data-r style="--i:6"><span class="n"><i data-lucide="code-xml"></i></span><b>Fix</b><small>Patch, memory line marked</small></li>
+        <li data-r style="--i:7"><span class="n"><i data-lucide="shield-check"></i></span><b>Verify</b><small>Safe runner, trusted tests</small></li>
+        <li data-r style="--i:8" class="atlas end"><span class="n"><i data-lucide="archive"></i></span><b>Memory</b>
+          <small class="outs"><u class="p">promoted</u><u class="r">renewed</u><u class="x">refused</u></small></li>
+      </ol>
+      <div class="band" data-r style="--i:9"><i data-lucide="database"></i><b>MongoDB Atlas</b><span>vector memory · team filter · proof validator · audit log</span></div>
+    </section>
+
+    <!-- 5 · Results -->
+    <section class="slide s-results" data-title="Results">
+      <p class="eyebrow" data-r style="--i:0">Results</p>
+      <div id="results-live" hidden>
+        <h2 class="head" data-r style="--i:1">Raw counts, nothing rounded.</h2>
+        <div id="results-md" class="md" data-r style="--i:2"></div>
+        <p class="src" data-r style="--i:3"><i data-lucide="file-text"></i><span id="results-src">evals/results/results.md</span></p>
+      </div>
+      <div id="results-placeholder">
+        <h2 class="head" data-r style="--i:1">Results: measured live.</h2>
+        <div class="vs">
+          <div class="side with" data-r style="--i:2">
+            <p class="label">With memory</p>
+            <p class="outcome ok"><i data-lucide="check"></i>Attempt 1</p>
+            <p class="note">The remembered line is in the first fix.</p>
+          </div>
+          <div class="arrow" data-r style="--i:3" aria-hidden="true"><i data-lucide="arrow-right"></i><span>Forget</span></div>
+          <div class="side after" data-r style="--i:4">
+            <p class="label">After Forget</p>
+            <p class="outcome warn"><i data-lucide="rotate-ccw"></i>Attempt 2</p>
+            <p class="note">Same case. The line is gone.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 · Honest limits -->
+    <section class="slide s-limits" data-title="Honest limits">
+      <p class="eyebrow" data-r style="--i:0">Honest limits</p>
+      <h2 class="head" data-r style="--i:1">What this is, and is not.</h2>
+      <ul class="limits">
+        <li data-r style="--i:2"><i data-lucide="flask-conical"></i><b>Synthetic incidents</b><small>Seeded bugs, not production traffic</small></li>
+        <li data-r style="--i:3"><i data-lucide="key-round"></i><b>Demo identity keys</b><small>Not real sign-in</small></li>
+        <li data-r style="--i:4"><i data-lucide="building-2"></i><b>One company, two teams</b><small><span class="t pay">Payments</span> and <span class="t plat">Platform</span></small></li>
+      </ul>
+      <p class="today" data-r style="--i:5"><span class="stamp proven still">Built today</span>Everything shown was built today.</p>
+    </section>
+  </main>
+
+  <footer class="chrome foot">
+    <nav id="dots" aria-label="Slides"></nav>
+    <p class="keys"><kbd>←</kbd><kbd>→</kbd> move <kbd>1</kbd>–<kbd>6</kbd> jump <kbd>F</kbd> fullscreen</p>
+  </footer>
+
+  <script src="vendor/lucide.min.js"></script>
+  <script src="slides.js"></script>
+</body>
+</html>

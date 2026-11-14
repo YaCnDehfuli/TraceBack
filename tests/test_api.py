@@ -34,10 +34,6 @@ def test_admin_routes_refuse_engineers(client):
     assert r.status_code == 403
 
 
-def test_stubs_answer_501(client):
-    key = {"X-API-Key": "test-payments-eng"}
-    assert client.get("/memories/search", params={"q": "duplicate"}, headers=key).status_code == 501
-
 
 def test_sample_events_endpoint(client):
     events = client.get("/dev/sample-run-events").json()
