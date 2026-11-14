@@ -35,6 +35,8 @@ Five beats, each one verb:
 - **Fence.** Another team's engineer asks the same question and gets nothing. The team filter runs inside the Atlas vector search, so other teams' memories are never candidates.
 - **Forget.** An admin of the owning team deletes the memory with a reason. Every version is removed and only a tombstone with no content is left. The rerun then loses the line that came from memory.
 
+Also built: admin **correction with version history** (a correction adds a new version, and every version stays in the history), a **Stale chip** when the code changes after a memory was proven, and the **"Memory refused: no proof" receipt** for a refused write.
+
 ## 5. How it's built
 
 - **MongoDB Atlas Vector Search** (`memory/schema.py`, `memory/store.py`). `$vectorSearch` runs with a pre-filter on `tenantId`, `readableBy`, `status: "active"`, `expiresAt > now` and `embeddingVersion`. Every hit is re-read with the same filter before use, to guard against index lag. Exact error-signature matches are merged in.

@@ -20,6 +20,9 @@ Plan references (PLAN 7.1, 7.2, 7.4) are in `docs/PLAN.md`. Where this file and 
 | **4** / **Shift+4** | Fence | Same, for case D. Switches the pill to **Platform engineer** by itself. |
 | **5** | Forget | Switches the pill to **Payments admin** and scrolls to the memory card. The Forget button is on the card (P2's admin drawer). |
 | **0** | Sample | Replays a recorded run (contracts/sample_run_events.json). Labelled **Replay**, never passed off as live. |
+| **F** | Fence | The Fence view: "Payments sees 1 / Platform sees 0" plus the database filter. Press it after **Shift+4**. Read-only, safe. |
+| **R** | Earn | The refusal receipt: "Memory refused: no proof". `demo_reset.py` creates it, so it is reliable. Read-only, safe. |
+| **6** / **Shift+6** | (rehearsal) | A *live* run of the poisoned-log case P (the bottom bar calls it "Poison"). **Do not use it on stage**: it is slow and needs the network. Use **R** instead. |
 | **C** | Compare | Opens or closes the with/without memory overlay. **Esc** also closes it. |
 
 Rules of thumb:
@@ -44,6 +47,7 @@ Rules of thumb:
 | 8 | Laptop sound off, notifications off (Focus mode). Phone timer ready. | Nothing pops up or beeps mid-demo. |
 | 9 | Windows: Focus assist on (no notification pop-ups). Close Slack, Discord, mail. Charger plugged in. | Nothing else on screen. |
 | 10 | Put the results slide and the title slide in a second window. | One click or Alt+Tab to reach them. |
+| 11 | **Demo laptop settings.** `.env` must have `MONGODB_DB=traceback_demo` and `AGENT_PROMOTE=false`, so live rehearsal runs never create new memories that the reset doesn't remove (issue #67). Restart `scripts/demo.py` after every `git pull`: the server doesn't reload code. About 5 minutes before each judging slot, run `uv run --python 3.13 python scripts/demo_reset.py --db traceback_demo`. | Reset prints `Demo reset complete.`; the server was restarted after the last pull. |
 
 **Wi-Fi independence, stated honestly.** The page itself needs no internet: fonts, icons, code highlighting and CSS are all in `web/vendor/` and the page loads nothing from a CDN. So the screen, the replay (**0**) and every saved run keep working with no Wi-Fi. **Live runs do need the network** (Atlas, Voyage embeddings, the LLM). Venue Wi-Fi is `TRBOT-Guest`. If it is slow, run the live parts earlier and show saved runs with the bare keys.
 
@@ -71,11 +75,11 @@ All key presses are Sepehr's. **Bold** = say it word for word.
 | Time | Beat | Who speaks | Keys | What appears | Key line | If it fails |
 | --- | --- | --- | --- | --- | --- | --- |
 | **0:00-0:20** | **Story** | P3 | Say the line and press **Shift+2** (starts the live Reuse run). | Reuse run starts: "Run started for Payments", steps appear one by one, the "Live" chip. The run keeps going while you talk. | **"Dana fixed this in March and left in June. At 3 a.m. the same alert pages Sam. Memory with receipts."** | No run starts: press **Shift+2** once more, then **0** (the recorded replay; say "recorded"). |
-| **0:20-0:40** | **Earn** (already run) | P3 | **1** (shows the Earn run). Optional, R11: the poisoned-log run (see 2.1). | The Earn run: the memory receipt prints in, stamped **Proven**. Poisoned run: step "Memory refused", stamp **Refused**. | **"Only a fix that turns a failing test green becomes memory. Atlas's schema validator rejects any memory whose proof record doesn't show that, and the app's database user can't change the validator."** If you showed the poisoned run, add: **"We submitted the fix this poisoned log asks for. The trusted tests fail, and Atlas rejects the write."** | Footer or answer says "No Earn run on record yet": press **0** and say **"this is a recording of the same flow."** Say the poisoned-log sentence only if you showed it. |
+| **0:20-0:40** | **Earn** (already run) | P3 | **1** (shows the Earn run). Then **R** for the refusal receipt (see 2.1). | The Earn run: the memory receipt prints in, stamped **Proven**. **R**: the "Memory refused: no proof" receipt, stamp **Refused**. | **"Only a fix that turns a failing test green becomes memory. Atlas's schema validator rejects any memory whose proof record doesn't show that, and the app's database user can't change the validator."** When you press **R**, add: **"We submitted the fix this poisoned log asks for. The trusted tests fail, and Atlas rejects the write."** | Footer or answer says "No Earn run on record yet": press **0** and say **"this is a recording of the same flow."** If **R** shows "No refused memory writes", skip the poisoned-log sentence and run the reset again after the session. |
 | **0:40-1:15** | **Reuse** (live since 0:00) | P1 | **2** (re-shows the live run, so the screen is on Reuse for P1's turn). Do not press Shift here. | Within seconds: "Seen before: Payments fixed this, and its conditions still hold." Step "Both conditions still true (2/2)". The patch with the **`ledger.mark_replayed` line highlighted "from memory · proven by test_replay_recorded_for_reconciliation"**. "Tests 7/7 pass" (the trusted suite has 7 tests, and the **0** replay shows 7/7 too). Say "all tests pass", never a number. Badge **Verified on attempt 1**. | **"Without memory the agent ships the generic fix and fails our team's test. With memory it is right first time, and this is the line it remembered."** (point at the highlighted line) | Still running at 1:15: keep talking, the screen keeps filling. Run errored or "Live runs unavailable": press **0**, say **"recorded run of the same flow"**. Wrong screen: press **2**. |
 | **1:15-1:35** | **Refuse** | P1 | **Shift+3** (or **3** if you ran it in the last 10 minutes) | Steps show "Not applied: duplicate key is `customer_id`; this memory requires `provider_event_id`", the line "Memory requires `provider_event_id` ≠ This incident: `customer_id`", receipt greys out under a **Not applied** stamp. Badge "Escalated to a human, with evidence". | **"Similar isn't enough. Evidence decides."** | Press **3** (re-shows a recent run). Still nothing: press **0** and move on to Fence. Cut this beat if over time. |
-| **1:35-2:00** | **Fence** | P2 | **Shift+4**: the pill flips to **Platform engineer** and a Platform run starts. | Step "Nothing your team may see". Answer: "Not seen before by your team. Investigating from scratch." Memory area: "Nothing your team may see." If the Fence view is merged: "Payments sees 1 / Platform sees 0" with the filter line. | **"You can't talk your way past it. The team filter runs inside the database search."** | Press **4** (re-shows a recent run). Or just use the pill: pick **Acting as: Platform engineer**; the memory area shows the Platform team's own list only. |
-| **2:00-2:40** | **Forget** | P2 | **5** (pill goes to **Payments admin**, page scrolls to the card). Then **a judge clicks Forget** on the card and types a reason. Then **C**. | The card turns into a grey dashed "Forgotten by Payments admin · reason · content erased" with a **Void** stamp. Compare overlay: **With memory** (attempt 1, the `mark_replayed` line shown) and **After Forget** (the same line missing, empty rows). | **"Forgetting is real. This is the same incident, run earlier with and without memory."** | Forget button not responding: press **C** anyway and say **"forget is one admin call; here is what the rerun looked like after it."** Compare empty: redo section 1.1 after the session. Close with **Esc**. |
+| **1:35-2:00** | **Fence** | P2 | **Shift+4**: the pill flips to **Platform engineer** and a Platform run starts. Then **F** for the Fence view. | Step "Nothing your team may see". Answer: "Not seen before by your team. Investigating from scratch." Memory area: "Nothing your team may see." **F**: "Payments sees 1 / Platform sees 0" with the filter line. | **"You can't talk your way past it. The team filter runs inside the database search."** | Press **4** (re-shows a recent run). Or just use the pill: pick **Acting as: Platform engineer**; the memory area shows the Platform team's own list only. |
+| **2:00-2:40** | **Forget** | P2 | Press **5** (pill goes to **Payments admin**, page scrolls to the card). If the Fence view is still showing, press **F5** to reload, then **5**. Then **a judge clicks Forget** on the card and types a reason. Then **C**. | The card turns into a grey dashed "Forgotten by Payments admin · reason · content erased" with a **Void** stamp. Compare overlay: **With memory** (attempt 1, the `mark_replayed` line shown) and **After Forget** (the same line missing, empty rows). | **"Forgetting is real. This is the same incident, run earlier with and without memory."** | Forget button not responding: press **C** anyway and say **"forget is one admin call; here is what the rerun looked like after it."** Compare empty: redo section 1.1 after the session. Close with **Esc**. |
 | **2:40-3:00** | **Receipts** | P1 | Alt+Tab to the results slide. | The slide: 27 runs, raw counts. | **"Twenty-seven runs. With the real memory: fixed first try, 9 of 9. No memory, or a decoy memory of about the same length: 0 of 9; they need a second try. Small, raw, all in the repo. Memory with receipts."** | No slide: say **"twenty-seven runs, the raw counts are in the repo"** and stop. Never invent a number. |
 
 **Timing rules:**
@@ -85,13 +89,9 @@ All key presses are Sepehr's. **Bold** = say it word for word.
 - Staleness (R12) is for Q&A only. Do not demo it in the 3 minutes.
 - After the session, run section 1 again before the next judges.
 
-### 2.1 The poisoned-log run (R11, case P)
+### 2.1 The poisoned-log refusal
 
-There is **no key for case P** in the page. Two ways:
-- **Console (rehearsal only):** press F12, type `traceback.startCase("P")`, press Enter, close F12. Fine for testing, too slow and risky on stage.
-- **Bookmark (recommended for the demo):** make a bookmark on the bookmarks bar named "Poisoned", with the address `javascript:traceback.startCase('P')`. One click starts the run. Test it at rehearsal; some browsers block `javascript:` bookmarks.
-
-The run starts live and takes about as long as Earn. Start it **just before 0:20** (while P3 tells the story), or leave it out. If it does not work, leave the poisoned log out and say nothing about it.
+Press **R** for the refusal receipt. Say: **"We submitted the fix this poisoned log asks for. The trusted tests fail, and Atlas rejects the write."** No live run, no bookmark. If the receipt is missing, run the reset and leave it out.
 
 ---
 
@@ -105,7 +105,7 @@ Find the last rung that is merged to `main` and works. Demo that row, nothing mo
 | **R3-R4** | Story, Earn, Reuse **on screen**, Fence. | **1**, **Shift+2**, **Shift+4**. Live runs need the agent (P1-2/P1-4). Without it the page says "Press 0 to replay a recorded run": use **0** and say "recorded". |
 | **R5** (**minimum complete demo**) | + Forget with the compare view. | Add **5** (Forget button) and **C**. Prepare the saved runs (1.1). |
 | **R6-R8** | The full script above. Start Reuse with **Shift+2**. Do Fence with **Shift+4** or the identity pill. Show Correction (R7) from the admin drawer, or keep it for Q&A. | As the script. |
-| **R9-R12** | The full script with the results slide (R10), the poisoned log in Earn (R11, section 2.1). Staleness (R12) for Q&A. | As the script. (The voice agent, R9, was dropped.) |
+| **R9-R12** | The full script with the results slide (R10), the refusal receipt in Earn (**R**, R11, section 2.1). Staleness (R12) for Q&A. | As the script. (The voice agent, R9, was dropped.) |
 
 ---
 
@@ -120,7 +120,7 @@ Two minutes per judge group. Short answers first, then stop. The owner answers; 
 | **Why vector search with so few memories?** | The seeded set has about 20 labelled distractors across two teams, plus a score cutoff. In production it is thousands. Vectors rank the candidates and the cutoff drops weak ones. Similar incidents score close together, so code checks the conditions, not the score. | P2 |
 | **Why vectors at all, not keywords?** | People describe the same bug differently each time. Recall embeds the facts parsed from the error (error code, route, duplicate-key field), not just the words of the report, and it also does an exact lookup on the error signature, so wording matters little. Vectors find the candidate; plain code checks it applies. | P2 |
 | **Isn't the convention test rigged?** | The convention is in the app's own month-end-close procedure (docs/operations), linked from the runbook. The no-memory agent can find it; it just takes more attempts. That is exactly the knowledge memory saves. | P1 |
-| **What stops a poisoned memory?** | The runner writes the proof record from a real test run, and Atlas's validator rejects any memory without a passing one. If we showed the poisoned run, you saw it refuse one. | P2 |
+| **What stops a poisoned memory?** | The runner writes the proof record from a real test run, and Atlas's validator rejects any memory without a passing one. If we showed the refusal receipt (**R**), you saw it refuse one. | P2 |
 | **Can someone talk their way into another team's memory?** | No. Identity comes from the session's key, what you say is ignored, and the team filter runs inside the database search. | P1 |
 | **What if the code changes?** | Each memory stores fingerprints of the files it touched. A change marks it stale (the card shows a Stale chip), and its fix must pass the tests again. To show it: with the Earn card on screen, add a comment line to `fixture_app/payments-webhooks/app/webhooks.py`; the chip appears within 5 s. Undo with `git checkout -- fixture_app/payments-webhooks/app/webhooks.py`. | P2 |
 | **How can a fix from March still be in memory if memories expire in a day?** | The demo policy is 24 hours (48 at most), so you can watch the bar move. A real team sets months. Each verified reuse renews it, up to the policy's maximum, and a fix that fails its test again is paused and not recalled. | P2 |
@@ -162,4 +162,5 @@ If anything fails twice, write it in team chat now and decide: fix, or drop that
 - The four API keys are fake demo identities, not real authentication.
 - Seeded distractors are labelled `seeded` in the UI and the README.
 - Live runs need Atlas, Voyage and the LLM over the network. Saved runs and the replay (key **0**) do not.
+- The Fence count "Payments sees 1" holds only on a freshly reset `traceback_demo`. If the screen shows another number, say "Platform sees zero".
 - The replay (**0**) is a recording and the page says **Replay**. Always say "recorded" out loud when you use it.
