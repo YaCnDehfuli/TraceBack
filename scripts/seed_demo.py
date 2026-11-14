@@ -10,6 +10,8 @@ Creates:
   under Payments, exactly the path a real run takes. With --reset it is recreated, so its 24 h
   restart and a memory forgotten in the previous judging round comes back.
 - the 90-second **canary** (seeded), recreated every time so its countdown restarts
+- about 20 labelled **distractors** across both teams (R8): other bug families, so vector search and
+  its score cutoff (memory/config.py MIN_SCORE) have something real to reject
 
 Honesty rule: a memory is labelled `seeded: true` unless the real runner proved it. If the fixture
 database (Docker) is down, the Earn step fails loudly; `--runner fake` exists only for laptops
@@ -85,6 +87,91 @@ SAMPLE_WEBHOOK = MemoryDraft(
 )
 
 
+# ------------------------------------------------------------------ distractors (R8, plan 4.4)
+# Realistic incidents from OTHER bug families, across both teams, so vector search has something to
+# rank and the score cutoff has something to reject. All labelled seeded. A few are deliberate near
+# misses (a webhook signature failure, a webhook relay timeout, a missing index) to test the cutoff.
+# None uses error 11000 on POST /webhooks/provider, so none can enter through the exact signature lookup.
+# (team, repository, title, symptoms = retrievalText, errorCode, operation, cause, fix)
+DISTRACTORS = [
+    ("team-payments", "payments-billing", "Round JPY totals once, at the end",
+     "Invoice totals for JPY customers are off by one yen; line items look right but the sum differs.",
+     "ROUNDING", "invoice.total", "Each line is rounded before summing.", "Sum exact amounts, round once."),
+    ("team-payments", "payments-webhooks", "Reload the signing secret after rotation",
+     "Provider webhooks rejected with HTTP 401 invalid signature since this morning's secret rotation.",
+     "401", "POST /webhooks/provider/verify", "The old signing secret is cached in memory.",
+     "Reload the secret on rotation; accept old and new during the overlap."),
+    ("team-payments", "payments-billing", "Compare card expiry in the card's own month",
+     "Cards are declined as expired one day early for customers in Asia and Australia.",
+     "CARD_EXPIRED", "card.validate", "Expiry compared against UTC midnight.", "Compare end of month in issuer time."),
+    ("team-payments", "payments-settlement", "Back off on 429 during settlement",
+     "Nightly settlement batch stops halfway with HTTP 429 Too Many Requests from the bank API.",
+     "429", "settlement.batch", "No backoff between bank API calls.", "Exponential backoff with jitter."),
+    ("team-payments", "payments-ledger", "Store money as integer minor units",
+     "Ledger balances drift by fractions of a cent after many small transfers.",
+     "FLOAT_DRIFT", "ledger.write", "Amounts stored as floating point.", "Store integer minor units."),
+    ("team-payments", "payments-billing", "Stream long receipts to PDF",
+     "Receipt PDF download times out for invoices with more than a few hundred lines.",
+     "TIMEOUT", "receipt.render", "Whole receipt built in memory first.", "Render pages incrementally."),
+    ("team-payments", "payments-billing", "Invalidate tax cache on region change",
+     "Customers who moved region are still charged their old sales-tax rate.",
+     "STALE_CACHE", "tax.lookup", "Tax rate cached by customer id only.", "Key the cache by region too."),
+    ("team-payments", "payments-billing", "Schedule renewals in UTC",
+     "Some subscriptions renewed twice on the night the clocks changed for daylight saving.",
+     "CRON_DST", "subscription.renew", "Cron runs in local time across the DST change.", "Run the job in UTC."),
+    ("team-payments", "payments-payouts", "Validate IBAN before payout",
+     "Payouts to some European bank accounts bounce days later as invalid account number.",
+     "IBAN_INVALID", "payout.create", "IBAN checksum not validated.", "Validate IBAN checksum at entry."),
+    ("team-payments", "payments-billing", "Paginate the invoice export",
+     "Monthly invoice export for large merchants crashes the worker with out of memory.",
+     "OOM", "invoice.export", "Whole month loaded at once.", "Paginate by 1,000 invoices."),
+    ("team-platform", "platform-infra", "Raise the resize worker's memory limit",
+     "Image resize pods are OOMKilled and restart in a loop when users upload very large photos.",
+     "OOMKilled", "worker.resize", "Full-size image decoded in memory.", "Downscale while decoding."),
+    ("team-platform", "platform-infra", "Size the Redis pool to the worker count",
+     "Under peak load requests fail with Redis connection pool exhausted.",
+     "POOL_EXHAUSTED", "cache.get", "Pool smaller than the number of workers.", "Pool size per worker."),
+    ("team-platform", "platform-gateway", "Renew the internal gateway certificate",
+     "Service-to-service calls fail with TLS handshake error: certificate has expired.",
+     "TLS_EXPIRED", "gateway.handshake", "Internal certificate not auto-renewed.", "Automate renewal."),
+    ("team-platform", "platform-config", "Default missing feature flags",
+     "Config loader crashes with a null pointer when a feature flag is missing.",
+     "NULL_FLAG", "flags.load", "Missing flag returns null.", "Return the declared default."),
+    ("team-platform", "platform-observability", "Alert before the log disk fills",
+     "Log shipper silently drops lines when the node disk is full.",
+     "DISK_FULL", "logs.ship", "No disk alert; shipper drops on write error.", "Alert at 80% and back-pressure."),
+    ("team-platform", "platform-audit", "Index the audit log by date",
+     "Audit log page takes 30 seconds to load; the database does a full collection scan.",
+     "SLOW_QUERY", "audit.list", "No index on created_at.", "Add an index on created_at."),
+    ("team-platform", "platform-infra", "Cache DNS for service discovery",
+     "Intermittent 'name not resolved' errors between services during traffic spikes.",
+     "DNS_FAIL", "discovery.resolve", "DNS lookups not cached.", "Local DNS cache with a short TTL."),
+    ("team-platform", "platform-deploy", "Make migrations reversible",
+     "Deploy rollback fails because the database migration cannot be undone.",
+     "MIGRATION", "deploy.rollback", "Destructive migration in one step.", "Expand, migrate, contract."),
+    ("team-platform", "platform-webhooks", "Time out the webhook relay sooner",
+     "Our webhook relay to partners times out and piles up requests when a partner is slow.",
+     "TIMEOUT", "POST /relay/partner", "No timeout on outbound partner calls.", "Five-second timeout and a queue."),
+    ("team-platform", "platform-auth", "Allow clock skew in token checks",
+     "Users are logged out at random with 'token not yet valid' errors.",
+     "JWT_NBF", "auth.verify", "Server clocks differ by a few seconds.", "Allow 30 seconds of skew."),
+]
+
+
+def seed_distractors(store: AtlasMemoryStore) -> int:
+    n = 0
+    for i, (team_id, repo, title, symptoms, code, op, cause, fix) in enumerate(DISTRACTORS, 1):
+        draft = MemoryDraft(
+            incident_id=f"seed_distractor_{i:02d}", repository_id=repo, source_revision="seed",
+            retrieval_text=symptoms, signature={"errorCode": code, "operation": op}, confirmed_cause=cause,
+            applicability=Applicability(), resolution_summary=fix, patch=NO_PATCH,
+        )
+        owner = Principal(tenant_id=TENANT, team_id=team_id, role="engineer")
+        store.promote(owner, draft, SEEDED_PROOF, title=title, seeded=True)
+        n += 1
+    return n
+
+
 def git_revision() -> str:
     try:
         out = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True)
@@ -136,6 +223,7 @@ def main() -> int:
     ap.add_argument("--runner", choices=["local", "fake"], default="local",
                     help="fake only without Docker; the Earn memory is then labelled seeded")
     ap.add_argument("--no-earn", action="store_true", help="skip the Earn memory")
+    ap.add_argument("--no-distractors", action="store_true", help="skip the ~20 labelled distractor memories")
     ap.add_argument("--sample", action="store_true", help="also seed a hand-made webhook memory (testing only)")
     a = ap.parse_args()
     db = get_db(a.db)
@@ -156,6 +244,8 @@ def main() -> int:
     canary = store.promote(PAYMENTS, CANARY, SEEDED_PROOF, title="Canary: nightly export timeout",
                            seeded=True, expires_in_seconds=90)
     print("canary (90 s):", canary)
+    if not a.no_distractors:
+        print(f"distractors: {seed_distractors(store)} labelled seeded memories (both teams, 24 h)")
     if a.sample:
         print("sample webhook memory:", store.promote(PAYMENTS, SAMPLE_WEBHOOK, SEEDED_PROOF, seeded=True,
                                                       title="Sample: duplicate webhook (hand-made)"))
