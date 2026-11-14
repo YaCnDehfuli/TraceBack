@@ -3,14 +3,15 @@
 // camelCase JSON), context is optional:
 //   { preconditions: [PreconditionResult] }   condition results for the current incident, during a run
 // Show "match: strong/weak", never a raw score; IDs, versions and hashes go behind "details".
-// Also fills #memory-panel with the caller's team's memories and refreshes it when the identity changes.
+// When no run is on screen, also lists the caller's team's memories in #memory-slot (refreshed on identity change).
 // Everything is built with textContent (never innerHTML): memory text can come from an LLM.
 (function () {
   if (!window.traceback) return;
 
   const TEAMS = {
-    "team-payments": { name: "Payments", color: "#0b7a75" },
-    "team-platform": { name: "Platform", color: "#6b4fbb" },
+    // Same colours as web/styles.css (.team-payments / .team-platform --team).
+    "team-payments": { name: "Payments", color: "#0f766e" },
+    "team-platform": { name: "Platform", color: "#6d28d9" },
   };
   const team = (id) => TEAMS[id] || { name: String(id || "").replace(/^team-/, ""), color: "#5b6670" };
 
@@ -55,7 +56,7 @@
   // ---------------------------------------------------------------- the card
   function forgottenCard(memory) {
     const f = memory.forgotten;
-    return el("article", "tb-card tb-forgotten",
+    return el("div", "tb-card tb-forgotten",
       el("div", "tb-title", memory.title || "Memory"),
       el("p", "tb-line", `Forgotten by ${actorLabel(f.forgottenBy)} · ${f.reason} · content erased`),
       el("p", "tb-muted", new Date(f.at).toLocaleString()));
@@ -130,7 +131,7 @@
         el("dt", null, "Deleted for good"), el("dd", null, new Date(memory.purgeAt).toLocaleString()),
         el("dt", null, "Created"), el("dd", null, new Date(memory.createdAt).toLocaleString())));
 
-    const card = el("article", "tb-card",
+    const card = el("div", "tb-card",
       chips,
       el("div", "tb-title", memory.title || "Untitled memory"),
       el("p", "tb-line", `Visible to: ${readers.join(", ")}${readers.length === 1 ? " only" : ""}`),
@@ -161,25 +162,24 @@
   }
 
   // ---------------------------------------------------------------- the panel
+  // Idle state only: when no run is on screen, #memory-slot lists the caller's team's memories.
+  // During a run, app.js (P3) owns the slot and calls renderMemoryCard for the run's memory;
+  // we never overwrite that (our list is marked with .tb-list).
   async function refreshMemories() {
-    const panel = document.getElementById("memory-panel");
-    if (!panel) return;
-    let body = panel.querySelector(".tb-panel-body");
-    if (!body) {
-      body = el("div", "tb-panel-body");
-      panel.appendChild(body);
-    }
+    const slot = document.getElementById("memory-slot");
+    if (!slot) return;
+    const ours = () => !slot.firstElementChild || slot.firstElementChild.classList.contains("tb-list");
+    if (!ours()) return;
+    let list;
     try {
       const memories = await window.traceback.api("/memories");
-      body.replaceChildren();
-      if (!memories.length) {
-        body.appendChild(el("p", "tb-muted", "Your team has no memories yet."));
-        return;
-      }
-      for (const m of memories.slice(0, 3)) body.appendChild(renderMemoryCard(m, {}));
+      list = el("div", "tb-list");
+      if (!memories.length) list.appendChild(el("p", "tb-muted", "Your team has no memories yet."));
+      for (const m of memories.slice(0, 3)) list.appendChild(renderMemoryCard(m, {}));
     } catch (err) {
-      body.replaceChildren(el("p", "tb-muted", `Memories unavailable: ${err.message}`));
+      list = el("div", "tb-list", el("p", "tb-muted", `Memories unavailable: ${err.message}`));
     }
+    if (ours()) slot.replaceChildren(list); // a run may have claimed the slot while we waited
   }
 
   // ---------------------------------------------------------------- styles (kept here so P3's page stays untouched)
@@ -202,6 +202,7 @@
       .tb-block { margin:10px 0 4px; }
       .tb-label { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#5b6670; }
       .tb-conds { list-style:none; padding:0; margin:4px 0; }
+      .tb-card ul li { list-style:none; } .tb-card p { margin-bottom:4px; } .tb-card details { margin-bottom:0; }
       .tb-cond { margin:3px 0; }
       .tb-icon { display:inline-block; width:1.4em; font-weight:700; }
       .tb-ok .tb-icon { color:#1a7f37; } .tb-bad .tb-icon { color:#b42318; } .tb-unknown .tb-icon { color:#8a5a00; }
@@ -222,9 +223,15 @@
   injectStyles();
   setInterval(tick, 1000);
   document.addEventListener("DOMContentLoaded", () => {
-    // Registered after app.js's own listener, so currentKey() is already the new identity.
-    const identity = document.getElementById("identity");
-    if (identity) identity.addEventListener("change", refreshMemories);
+    // app.js sets <body class="team-…"> on every identity change (the pill AND keys 4/5),
+    // so watching the body class catches all of them.
+    let team = document.body.className;
+    new MutationObserver(() => {
+      if (document.body.className !== team) {
+        team = document.body.className;
+        refreshMemories();
+      }
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
     refreshMemories();
   });
 })();
