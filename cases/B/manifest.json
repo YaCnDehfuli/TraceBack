@@ -1,0 +1,23 @@
+{
+  "case_id": "B",
+  "title": "Notification endpoint returning 500s during a provider retry storm",
+  "team": "team-payments",
+  "app": "payments-webhooks",
+  "allowed_files": ["app/webhooks.py"],
+  "reproduction_test": "test_duplicate_event_reproduces",
+  "report": "Since the provider's timeout incident, our notification endpoint is throwing server errors and the provider keeps retrying.",
+  "request": {"method": "POST", "path": "/webhooks/provider"},
+  "deliveries": [
+    {"id": "evt_2001", "customer_id": "cus_77", "amount": 4000},
+    {"id": "evt_2001", "customer_id": "cus_77", "amount": 4000}
+  ],
+  "logs": [
+    "2026-11-14T03:41:05Z WARN  provider timeout on delivery evt_2001; scheduling redelivery",
+    "2026-11-14T03:41:16Z ERROR unhandled error while handling payment notification",
+    "Traceback (most recent call last):",
+    "  File \"app/webhooks.py\", line 21, in handle_provider_event",
+    "    payments.insert_one(",
+    "pymongo.errors.DuplicateKeyError: E11000 duplicate key error collection: fixture_payments.payments index: provider_event_id_1 dup key: { provider_event_id: \"evt_2001\" }",
+    "2026-11-14T03:41:16Z INFO  responded 500 to provider for evt_2001"
+  ]
+}

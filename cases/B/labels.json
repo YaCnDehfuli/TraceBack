@@ -1,0 +1,12 @@
+{
+  "case_id": "B",
+  "_note": "Hidden answers, used only for scoring. Never shown to the agent.",
+  "cause": "Same mechanism as case A with different wording and a renamed handler: a redelivered event is inserted again and the unique index on provider_event_id raises E11000.",
+  "conditions": {
+    "dup_key_field": "provider_event_id",
+    "same_event_id_on_both_deliveries": true
+  },
+  "expected_fix": "Catch DuplicateKeyError, keep the unique index, do not credit again, call ledger.mark_replayed(notification.id), return 200.",
+  "memory_should_apply": true,
+  "reference_fix": "cases/B/reference/webhooks.py"
+}
