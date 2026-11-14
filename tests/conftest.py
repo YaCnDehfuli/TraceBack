@@ -11,9 +11,24 @@ from contracts.models import Principal
 from core.config import get_settings
 
 DEMO_PRINCIPALS = {
-    "test-payments-eng": {"tenantId": "demo-org", "teamId": "team-payments", "role": "engineer"},
-    "test-payments-admin": {"tenantId": "demo-org", "teamId": "team-payments", "role": "memory_admin"},
-    "test-platform-eng": {"tenantId": "demo-org", "teamId": "team-platform", "role": "engineer"},
+    "test-payments-eng": {
+        "tenantId": "demo-org",
+        "teamId": "team-payments",
+        "role": "engineer",
+        "authorizedRepos": ["payments-webhooks"],
+    },
+    "test-payments-admin": {
+        "tenantId": "demo-org",
+        "teamId": "team-payments",
+        "role": "memory_admin",
+        "authorizedRepos": ["payments-webhooks"],
+    },
+    "test-platform-eng": {
+        "tenantId": "demo-org",
+        "teamId": "team-platform",
+        "role": "engineer",
+        "authorizedRepos": ["platform-webhooks"],
+    },
 }
 
 
