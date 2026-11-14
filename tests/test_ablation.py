@@ -115,8 +115,8 @@ def test_placebo_file_is_valid_and_length_matched():
     report = ab.validate_placebos(raw, ab.real_memory_lengths())
     assert report["ok"], report["problems"]
     assert 3 <= len(report["items"]) <= 5
-    for it in report["items"]:
-        assert all(abs(r - 1) <= 0.15 for r in it["ratios"].values())
+    for it in report["items"]:  # only what reaches the prompt is gated (retrieval_text is reported only)
+        assert all(abs(it["ratios"][k] - 1) <= 0.15 for k in ab.GATED_LENGTHS)
 
 
 def test_placebo_file_loads_through_the_loops_own_reader():
@@ -342,7 +342,9 @@ def test_results_markdown_has_raw_counts_and_no_percentages(tmp_path):
     assert "| valid runs | 1/2 | 1/1 | 2/2 |" in text
     assert "| INVALID / ERROR runs (not counted) | 1 / 0 | 0 / 0 | 0 / 0 |" in text
     assert "`run_sample_b`" in text and "LLM rejected the API key" in text
-    assert "| real (Earn, case A) | 296 | 245 | 880 | 1125 |" in text
+    ref = ab.real_memory_lengths()  # retrieval_text follows agent.observe._summary, so don't hardcode it
+    row = [ref["retrieval_text"], ref["cause_and_resolution"], ref["patch"], ref["injected"]]
+    assert "| real (Earn, case A) | " + " | ".join(map(str, row)) + " |" in text
     data = json.loads(js.read_text(encoding="utf-8"))
     assert len(data["runs"]) == 5 and data["summary"]["real"]["verified"] == 2
 

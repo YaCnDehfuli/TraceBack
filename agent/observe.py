@@ -43,17 +43,24 @@ def observations_from_case(manifest: CaseManifest, incident_id: str) -> Observat
 
 
 def _summary(obs: Observations, report: str) -> str:
-    """Symptoms only (what anyone could see in a new incident), never the cause or the fix."""
+    """The text embedded for recall, on both sides (the memory and the query). Symptoms only, never the cause
+    or the fix. For a duplicate key it is built from code-derived facts alone, the deciding ones first: the
+    free-text report varies in wording between true repeats and shares words with look-alikes, so including
+    it made a trap (case C/D) outrank true repeats (scripts/embed_separation.py). The report still goes to
+    the LLM in the brief."""
+    if obs.error_code == "11000" and obs.dup_key_field:
+        ids = obs.delivery_event_ids
+        same = "unknown" if len(ids) < 2 else ("the same" if len(set(ids)) == 1 else "a different")
+        return (
+            f"duplicate key field: {obs.dup_key_field}. unique index: {obs.dup_key_index}. "
+            f"retried deliveries carry {same} event id. "
+            f"error: E11000 {obs.exception_type}. operation: {obs.operation}."
+        )
     facts = []
     if obs.exception_type:
         facts.append(obs.exception_type)
-    if obs.error_code == "11000":
-        facts.append(f"E11000 duplicate key on {obs.dup_key_field} (index {obs.dup_key_index})")
     if obs.operation:
         facts.append(f"during {obs.operation}")
-    ids = obs.delivery_event_ids
-    if len(ids) >= 2:
-        facts.append(f"{len(ids)} deliveries, {'same' if len(set(ids)) == 1 else 'different'} event id")
     if obs.stack_frames:
         facts.append(f"at {obs.stack_frames[-1]}")
     text = "; ".join(facts)

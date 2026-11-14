@@ -418,7 +418,8 @@ def _escalation(case, obs, team, run_id, attempt, final, last_fix, rejected_reas
     lines = [
         f"Traceback escalation for {team}: case {case.case_id}",
         f"Incident {obs.incident_id} · repo {obs.repository_id} · run {run_id}",
-        f"Symptom: {obs.summary or 'n/a'}",
+        f"Report: {case.request.get('report') or 'n/a'}",
+        f"Parsed: {obs.summary or 'n/a'}",
     ]
     if rejected_reasons:
         lines.append(f"Memory: a similar memory was NOT applied. {rejected_reasons[0]}")
