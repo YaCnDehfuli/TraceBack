@@ -111,7 +111,6 @@
   function resetView(caseId) {
     $("timeline").innerHTML = "";
     $("memory-slot").innerHTML = "";
-    $("memory-panel").classList.remove("has-active-memory");
     setOutcome("");
     setAnswer("Investigating…", "idle");
     state = freshState();
@@ -167,9 +166,7 @@
     }
     const slot = $("memory-slot");
     slot.innerHTML = "";
-    slot.appendChild(node);
-    // While a memory is in play, it is the panel's subject: memory.js's team list steps aside.
-    $("memory-panel").classList.add("has-active-memory");
+    slot.appendChild(node); // replaces memory.js's idle team list (.tb-list) while a run is on screen
     drawIcons(slot);
   }
 
