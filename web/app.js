@@ -418,6 +418,11 @@
     more.hidden = body.scrollHeight <= body.clientHeight;
   }
 
+  function clearVerdict() {
+    setOutcome("");
+    $("handoff")?.remove();
+  }
+
   function toast(text, iconName) {
     const t = el("div", { class: "toast", role: "status" }, icon(iconName), text);
     document.body.appendChild(t);
@@ -683,6 +688,7 @@
   }
 
   function showCompare(caseId) {
+    document.querySelectorAll(".toast").forEach((t) => t.remove()); // never over the overlay
     const finished = Object.values(runs)
       .filter((r) => r.caseId === caseId && r.events.some((e) => e.type === "run_finished"))
       .map((r) => summarize(r.events));
@@ -769,8 +775,10 @@
     "0": () => replaySample(),
     c: () => ($("compare").hidden ? showCompare("B") : hideCompare()), // compare with vs without memory
     // P2 views (web/memory.js), into the memory panel:
-    f: () => window.traceback.showFence && window.traceback.showFence(), // "Payments sees 1 / Platform sees 0" + filter
-    r: () => window.traceback.showRefusal && window.traceback.showRefusal(), // latest "Memory refused: no proof." (R11)
+    // F and R swap the receipt column to a P2 view: clear the run's verdict so a green "Verified" never sits
+    // under a red refusal, and the Fence card has the column to itself (fits at 1280x720).
+    f: () => { clearVerdict(); window.traceback.showFence && window.traceback.showFence(); }, // "Payments sees 1 / Platform sees 0" + filter
+    r: () => { clearVerdict(); window.traceback.showRefusal && window.traceback.showRefusal(); }, // latest "Memory refused: no proof." (R11)
   };
 
   const chip = (key) => document.querySelector(`#keys button[data-key="${key}"]`);

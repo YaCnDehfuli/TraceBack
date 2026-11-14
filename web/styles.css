@@ -409,3 +409,6 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Compare: a failing test's name stays on one line (no mid-word break). */
+#compare .failing code { white-space: nowrap; font-size: 0.8em; }
