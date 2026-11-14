@@ -93,9 +93,10 @@ class ScriptedLLM:
         return LLMReply(tool_calls=calls, assistant_message={"role": "assistant", "content": content})
 
 
-def get_llm() -> LLMClient:
+def get_llm(model: str | None = None) -> LLMClient:
+    """The configured LLM; `model` overrides LLM_MODEL (used by calibration to compare models)."""
     s = get_settings()
-    key, model = s.llm_api_key.get_secret_value(), s.llm_model.strip()
+    key, model = s.llm_api_key.get_secret_value(), (model or s.llm_model).strip()
     if not key or not model:
         raise RuntimeError("LLM_API_KEY and LLM_MODEL must be set in .env (e.g. LLM_MODEL=claude-haiku-5-5).")
     if s.llm_provider != "anthropic":

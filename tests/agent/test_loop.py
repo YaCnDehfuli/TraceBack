@@ -105,3 +105,44 @@ def test_workspace_path_checks_and_contents():
     for bad in ["../.env", "/etc/passwd", "app/../../.env", "trusted_tests/test_webhooks.py", "C:\\x"]:
         with pytest.raises(PathRefused):
             ws.read(bad)
+
+
+def test_refused_memory_is_named_even_when_the_fix_then_verifies():
+    store = FakeMemoryStore()
+    view, sink = run("C", store, [[("propose_fix", fix("A"))]])
+    assert view.outcome == "verified" and not view.seen_before
+    assert (
+        sink.events[-1]
+        .payload["summary"]
+        .startswith("A similar memory didn't apply (duplicate key is `customer_id`). Fix verified on the first attempt")
+    )
+
+
+def test_brief_does_not_list_the_docs():
+    captured = {}
+
+    def first(messages):
+        captured["brief"] = messages[0]["content"]
+        return [("propose_fix", fix("B"))]
+
+    run("B", FakeMemoryStore(), [first], memory_mode="off", promote=False)
+    assert "RUNBOOK" not in captured["brief"] and "docs/" not in captured["brief"]
+    assert "list_files" in captured["brief"]
+
+
+def test_calibration_summary_reads_the_timeline():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("calibrate", ROOT / "evals" / "calibrate.py")
+    calibrate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(calibrate)
+    script = [
+        [("read_file", {"path": "app/webhooks.py"})],
+        [("propose_fix", fix("B", without_convention=True))],
+        [("propose_fix", fix("B"))],
+    ]
+    _, sink = run("B", FakeMemoryStore(), script, memory_mode="off", promote=False)
+    row = calibrate.summarize(sink.events)
+    assert row["attempt1"] is False and row["attempts"] == 2 and row["outcome"] == "verified"
+    assert row["failed_on_attempt1"] == ["test_replay_recorded_for_reconciliation"]
+    assert row["reads"] == ["app/webhooks.py"] and row["docs_opened"] == []
