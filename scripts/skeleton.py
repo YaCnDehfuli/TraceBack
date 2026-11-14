@@ -110,6 +110,9 @@ def git_revision() -> str:
         return "unknown"
 
 
+FIXTURE_HINT = "start it with: docker run -d --name fixture-mongo -p 27018:27017 mongo"
+
+
 def pick_runner(choice: str) -> tuple[Runner, str]:
     if choice == "fake":
         return FakeRunner(), "FakeRunner"
@@ -118,23 +121,30 @@ def pick_runner(choice: str) -> tuple[Runner, str]:
     return LocalRunner(), "LocalRunner"
 
 
-def pick_memory(choice: str) -> tuple[MemoryStore, str]:
+def pick_memory(choice: str, strict: bool) -> tuple[MemoryStore, str, bool]:
+    """Returns (store, name, is_fallback). Falls back to the fake only in auto mode, and says so."""
     if choice == "fake":
-        return FakeMemoryStore(seed_example=False), "FakeMemoryStore"
-    from memory.store import AtlasMemoryStore
-
-    return AtlasMemoryStore(), "AtlasMemoryStore"
-
-
-def call_with_fallback(label, real_call, fake_call, strict: bool):
-    """Call the real implementation; if it is still a stub (NotImplementedError), use the fake."""
+        return FakeMemoryStore(seed_example=False), "FakeMemoryStore", False
     try:
-        return real_call(), False
-    except NotImplementedError as e:
-        if strict:
-            raise SystemExit(f"{label}: not implemented yet ({e}) and --strict is set.") from None
-        say(f"  ({label} not merged yet: {e}. Using the fake.)")
-        return fake_call(), True
+        from memory.store import AtlasMemoryStore
+
+        return AtlasMemoryStore(), "AtlasMemoryStore", False
+    except RuntimeError as e:  # e.g. MONGODB_URI not set yet
+        if strict or choice == "atlas":
+            raise SystemExit(f"AtlasMemoryStore: {e}") from None
+        say(f"  (Atlas not configured yet: {e} Using the fake memory.)")
+        return FakeMemoryStore(seed_example=False), "FakeMemoryStore", True
+
+
+def explain_memory_error(e: Exception) -> str:
+    name = type(e).__name__
+    if name == "MemoryRefused":
+        return str(e) or "Memory refused: no proof."
+    if "ServerSelectionTimeout" in name:
+        return "cannot reach Atlas: add your IP in Atlas > Database & Network Access > IP Access List"
+    if "OperationFailure" in name and "auth" in str(e).lower():
+        return "Atlas authentication failed: check the user and password in MONGODB_URI"
+    return f"{name}: {str(e)[:200]}"
 
 
 def wait_searchable(memory: MemoryStore, memory_id: str, timeout_s: float = 60) -> float | None:
@@ -163,18 +173,24 @@ def main(argv: list[str] | None = None) -> int:
     # 1. Proof: the runner verifies the reference fix.
     say(f"1. Verify the reference fix for case {earn.case_id}")
     runner, runner_name = pick_runner(args.runner)
-    if args.runner == "local":
-        result, faked = runner.verify(earn.case_id, patch), False
-    else:
-        result, faked = call_with_fallback(
-            runner_name,
-            lambda: runner.verify(earn.case_id, patch),
-            lambda: FakeRunner().verify(earn.case_id, patch),
-            args.strict,
-        )
+    must_be_real = args.strict or args.runner == "local"
+    faked = args.runner == "fake"
+    try:
+        result = runner.verify(earn.case_id, patch)
+    except NotImplementedError as e:
+        if must_be_real:
+            raise SystemExit(f"{runner_name}: not implemented yet ({e}).") from None
+        say(f"  ({runner_name} not merged yet: {e}. Using the fake runner.)")
+        result, faked, runner_name = FakeRunner().verify(earn.case_id, patch), True, "FakeRunner"
+    if not faked and result.status == "inconclusive" and (result.detail or "").startswith("fixture database"):
+        if must_be_real:
+            say(f"R1 FAILED: fixture database unreachable; {FIXTURE_HINT}")
+            return 1
+        say(f"  (fixture database unreachable: using the fake runner. For the real one, {FIXTURE_HINT})")
+        result, faked, runner_name = FakeRunner().verify(earn.case_id, patch), True, "FakeRunner"
     passed = sum(t.passed for t in result.tests)
     say(
-        f"   {'FakeRunner' if faked else runner_name}: status={result.status} before_failed={result.before_failed} "
+        f"   {runner_name}: status={result.status} before_failed={result.before_failed} "
         f"after_passed={result.after_passed} tests {passed}/{len(result.tests)}"
     )
     if not result.verified:
@@ -192,19 +208,18 @@ def main(argv: list[str] | None = None) -> int:
     draft = build_draft(
         obs_earn, patch, source_revision=git_revision(), confirmed_cause=CAUSE, resolution_summary=RESOLUTION
     )
-    memory, memory_name = pick_memory(args.memory)
-    fake_memory = FakeMemoryStore(seed_example=False)
-    if args.memory == "atlas":
-        memory_id, mem_faked = memory.promote(PAYMENTS, draft, result), False
-    else:
-        memory_id, mem_faked = call_with_fallback(
-            memory_name,
-            lambda: memory.promote(PAYMENTS, draft, result),
-            lambda: fake_memory.promote(PAYMENTS, draft, result),
-            args.strict,
-        )
-    if mem_faked:
-        memory, memory_name = fake_memory, "FakeMemoryStore"
+    memory, memory_name, mem_faked = pick_memory(args.memory, args.strict)
+    try:
+        memory_id = memory.promote(PAYMENTS, draft, result)
+    except NotImplementedError as e:
+        if args.strict or args.memory == "atlas":
+            raise SystemExit(f"{memory_name}: not implemented yet ({e}).") from None
+        say(f"  ({memory_name} not merged yet: {e}. Using the fake memory.)")
+        memory, memory_name, mem_faked = FakeMemoryStore(seed_example=False), "FakeMemoryStore", True
+        memory_id = memory.promote(PAYMENTS, draft, result)
+    except Exception as e:  # noqa: BLE001 - report any Atlas problem in one line
+        say(f"R1 FAILED: promote: {explain_memory_error(e)}")
+        return 1
     say(f"   {memory_name}: promoted {memory_id}")
     waited = wait_searchable(memory, memory_id)
     if waited is None:
@@ -215,8 +230,12 @@ def main(argv: list[str] | None = None) -> int:
     # 3. Reuse and Fence: recall with case B's observations under both teams.
     say(f"3. Recall with case {reuse.case_id}'s observations")
     obs_reuse = observations_from_case(reuse, incident_id=new_id("inc"))
-    payments_hits = memory.recall(PAYMENTS, obs_reuse, run_id=new_id("run"))
-    platform_hits = memory.recall(PLATFORM, obs_reuse, run_id=new_id("run"))
+    try:
+        payments_hits = memory.recall(PAYMENTS, obs_reuse, run_id=new_id("run"))
+        platform_hits = memory.recall(PLATFORM, obs_reuse, run_id=new_id("run"))
+    except Exception as e:  # noqa: BLE001
+        say(f"R1 FAILED: recall: {explain_memory_error(e)}")
+        return 1
     say(f"   Payments finds {len(payments_hits)}; Platform finds {len(platform_hits)}")
     if payments_hits:
         top = payments_hits[0]
