@@ -108,7 +108,9 @@
 
   function overflowing() {
     const boxes = $("compare").hidden ? [$("run-panel"), $("memory-panel")] : [$("compare")];
-    return ROOT.scrollHeight > innerHeight || ROOT.scrollWidth > innerWidth
+    // A top bar that wrapped (the pill on a second row) counts too: it fits vertically but looks broken.
+    const wrapped = $("identity").getBoundingClientRect().top >= document.querySelector(".brand").getBoundingClientRect().bottom;
+    return wrapped || ROOT.scrollHeight > innerHeight || ROOT.scrollWidth > innerWidth
       || boxes.some((b) => b.scrollHeight > b.clientHeight + 1);
   }
 
@@ -296,7 +298,7 @@
     document.body.className = `team-${entry.team}`;
     $("identity").value = key;
     api("/whoami")
-      .then((p) => setStatus(`Acting as ${teamName(p.teamId)} · ${p.role}`))
+      .then((p) => setStatus(`Acting as ${teamName(p.teamId)} · ${p.role.replace("memory_", "")}`)) // "admin", as the pill says
       .catch(() => setStatus("Couldn't confirm who you're acting as."));
   }
 
@@ -457,6 +459,9 @@
         if (!p.count) {
           addStep("search-x", "Nothing your team may see", { tone: "memory", sub: "Investigating from scratch.", phase: "check" });
           $("memory-slot").dataset.empty = "Nothing your team may see.";
+          // A real child, so memory.js's idle list (refreshed when key 4 flips the pill) can't fill the slot
+          // with the team's own memories next to "Nothing your team may see".
+          $("memory-slot").replaceChildren(el("p", { class: "slot-empty" }, "Nothing your team may see."));
           setAnswer("Not seen before by your team. Investigating from scratch.", "idle");
         } else {
           const ref = p.memories[0];
@@ -539,6 +544,9 @@
         break;
       }
       case "memory_outcome": {
+        // near_miss comes once per recalled memory and repeats the check step's "Not applied" line; it must not
+        // swap the receipt either (the check step already chose the memory to show).
+        if (p.outcome === "near_miss") break;
         const refused = p.outcome === "refused" || p.outcome === "disputed";
         const text = p.outcome === "renewed" ? "Receipt renewed: proven again today." : p.message || `Memory ${p.outcome}`;
         addStep(refused ? "ban" : "receipt-text", text, { tone: refused ? "bad" : "memory" });
@@ -598,7 +606,9 @@
         events = await api(`/runs/${encodeURIComponent(runId)}/events?after=${after}`);
       } catch (err) {
         console.warn("Traceback: polling run events failed", err);
-        setStatus("Connection lost. Retrying…");
+        // 404: the pill was switched to another team mid-run. Not a lost connection: say so, keep polling, and
+        // the run picks up again when the pill goes back.
+        setStatus(err.status === 404 ? "Another team's run: switch the pill back to follow it." : "Connection lost. Retrying…");
       }
       for (const event of events) {
         if (token !== followToken) return;
@@ -764,14 +774,17 @@
     // Earn: shows the last Earn run; a new one only with Shift, so a stray 1 can't create a memory mid-demo.
     "1": (force) => {
       if (force) startCase("A");
-      else if (lastRunByCase.A) followRun(lastRunByCase.A.runId, "A");
+      else if (lastRunByCase.A) {
+        if (currentKey.split("-")[1] !== "payments") applyIdentity(CASES.A.key);
+        followRun(lastRunByCase.A.runId, "A");
+      }
       else setAnswer("No Earn run on record yet. Shift+1 starts one.", "idle");
     },
     "2": (force) => openCase("B", force), // Reuse
     "3": (force) => openCase("C", force), // Refuse
     "4": (force) => openCase("D", force), // Fence: switches to the Platform engineer
     // Forget: memory.js only redraws a slot it owns, so clear a Fence/refusal view first, then redraw the list.
-    "5": () => { $("memory-slot").replaceChildren(); applyIdentity("key-payments-admin"); window.traceback.refreshMemories?.(); $("memory-panel").scrollIntoView({ behavior: smooth }); },
+    "5": () => { $("memory-slot").replaceChildren(); applyIdentity("key-payments-admin"); window.traceback.refreshMemories?.(); $("memory-panel").scrollIntoView({ behavior: smooth }); scrollToForget(Date.now()); },
     "6": (force) => openCase("P", force), // Earn's poisoned log: Atlas refuses an unproven memory
     "0": () => replaySample(),
     c: () => ($("compare").hidden ? showCompare("B") : hideCompare()), // compare with vs without memory
@@ -781,6 +794,14 @@
     f: () => { clearVerdict(); window.traceback.showFence && window.traceback.showFence(); }, // "Payments sees 1 / Platform sees 0" + filter
     r: () => { clearVerdict(); window.traceback.showRefusal && window.traceback.showRefusal(); }, // latest "Memory refused: no proof." (R11)
   };
+
+  // Key 5: memory.js adds the admin drawer once /whoami answers; bring its reason box and Forget button into view
+  // (at 1280x720 they sit below the card, inside the receipt column's scroll).
+  function scrollToForget(since) {
+    const reason = document.querySelector("#memory-slot .tb-admin .tb-reason");
+    if (reason) reason.scrollIntoView({ block: "center", behavior: smooth });
+    else if (Date.now() - since < 5000) setTimeout(() => scrollToForget(since), 200);
+  }
 
   const chip = (key) => document.querySelector(`#keys button[data-key="${key}"]`);
   function setPressed(key, on) {
