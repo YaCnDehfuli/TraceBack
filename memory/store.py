@@ -1,7 +1,7 @@
 """AtlasMemoryStore: the real MemoryStore (contracts/interfaces.py). The only code that writes memories.
 
-Done (P2-2): promote, is_searchable, recall, search, unscoped_search.
-Still to do: record_use, forget, expire (P2-6); correct (P2-7).
+Done: promote, is_searchable, recall, search, unscoped_search (P2-2); record_use (P2-6).
+Still to do: forget, expire (P2-6); correct (P2-7).
 
 Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 - recall: $vectorSearch pre-filter on tenantId, readableBy, status="active", expiresAt > now,
@@ -31,6 +31,7 @@ from contracts.models import (
     MemoryCandidate,
     MemoryCard,
     MemoryDraft,
+    MemoryOutcome,
     MemoryUseDecision,
     Observations,
     Principal,
@@ -190,8 +191,75 @@ class AtlasMemoryStore:
 
     def record_use(
         self, principal: Principal, memory_id: str, version: int, run_id: str, decision: MemoryUseDecision
-    ) -> None:
-        raise NotImplementedError("P2-6: record_use")
+    ) -> MemoryOutcome | None:
+        """Record what the agent did with a recalled memory. The store decides the governance outcome
+        (guide 8.4); the agent never does. Returns that outcome for the run's memory_outcome event:
+
+          rejected / stale                                  -> "near_miss" (memory stays active)
+          used, no verification yet                         -> None   (audit "used")
+          used, verified                                    -> "renewed" (expiry extended, capped)
+          used, conditions all held, verification failed    -> "disputed" (paused: not searchable)
+          used, verification inconclusive (our infra broke) -> None   (nothing blamed on the memory)
+
+        Never raises for a memory that vanished mid-run (forgotten, expired, other team): it logs
+        `use_ignored` and returns None, so a run is never crashed by governance.
+        """
+        p, d = principal, decision
+        actor = {"type": "agent", "id": f"run:{run_id}"}
+        details: dict[str, Any] = {
+            "decision": d.decision,
+            "preconditions": [r.model_dump(by_alias=True) for r in d.preconditions],
+        }
+        if d.verification is not None:
+            v = d.verification
+            details["verification"] = {"runId": v.run_id, "status": v.status, "testsPassed": v.tests_passed,
+                                       "testsTotal": len(v.tests)}
+
+        readable = {"tenantId": p.tenant_id, "readableBy": {"$in": [p.team_id]}}  # any status
+        doc = self.memories.find_one({"_id": memory_id, **readable}, {"embedding": 0})
+        if doc is None:
+            audit.log(self.db, tenant_id=p.tenant_id, event="use_ignored", actor=actor, memory_id=memory_id,
+                      version=version, run_id=run_id, reason="memory no longer readable", details=details)
+            return None
+
+        def log(event: str, reason: str | None = d.reason, extra: dict | None = None) -> None:
+            audit.log(self.db, tenant_id=p.tenant_id, event=event, actor=actor, memory_id=memory_id,
+                      version=doc["version"], run_id=run_id, reason=reason,
+                      details={**details, **(extra or {})}, content_hash=audit.content_hash(doc))
+
+        # Not applied: its conditions didn't hold here (or it was stale). Not the memory's fault.
+        if d.decision in ("rejected", "stale"):
+            log("near_miss")
+            return "near_miss"
+
+        # decision == "used"
+        if d.verification is None or d.verification.status == "inconclusive":
+            log("used")
+            return None
+
+        if d.verification.verified:
+            log("used")
+            policy = get_policy(self.db, doc["tenantId"], doc["ownerTeamId"])
+            if not policy["renewOnReverify"]:
+                return None
+            new_exp, new_purge = expiry_for(policy, doc["createdAt"], utc_now())
+            if new_exp <= doc["expiresAt"]:  # never shorten; at max lifetime this is a no-op
+                log("renewed", extra={"expiresAt": doc["expiresAt"], "capped": True})
+                return "renewed"
+            self.memories.update_one({"_id": memory_id, "status": "active"},
+                                     {"$set": {"expiresAt": new_exp, "purgeAt": new_purge}})
+            log("renewed", extra={"from": doc["expiresAt"], "expiresAt": new_exp, "purgeAt": new_purge})
+            return "renewed"
+
+        # Applied and verification failed.
+        held = bool(d.preconditions) and all(r.held is True for r in d.preconditions)
+        if not held:
+            # Conditions weren't all confirmed, so the failure isn't evidence against the memory.
+            log("used", extra={"verificationFailed": True})
+            return None
+        self.memories.update_one({"_id": memory_id, "status": "active"}, {"$set": {"status": "disputed"}})
+        log("disputed", reason=d.reason or "conditions held but the remembered fix failed verification")
+        return "disputed"
 
     # ------------------------------------------------------------------ read
 
