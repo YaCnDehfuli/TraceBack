@@ -411,7 +411,9 @@
     if (!slot) return null;
     try {
       const list = await window.traceback.api("/memories/refusals?limit=10");
-      const ev = runId ? list.find((e) => e.runId === runId) : list[0];
+      // The audit records the runner's verification id, not the agent's run id, so a live run's id
+      // usually won't match: fall back to the most recent refusal (the one that just happened).
+      const ev = (runId && list.find((e) => e.runId === runId)) || list[0];
       slot.replaceChildren(ev ? renderRefusal(ev) : el("p", "tb-muted", "No refused memory writes for your team."));
       return ev || null;
     } catch (err) {
