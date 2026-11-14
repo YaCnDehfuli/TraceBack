@@ -147,22 +147,26 @@
     } catch (_) {
       card = null; // P2's endpoint not ready, or not readable: fall back to the reference
     }
-    const memory = card || {
-      memoryId: ref.memoryId, version: ref.version, ownerTeamId: ref.ownerTeamId, match: ref.match,
-      title: "Replayed webhook: record the replay, credit once",
-    };
     const context = { currentKey, preconditions: state.preconditions, decision: state.decision };
     let node = null;
-    try {
-      node = window.traceback.renderMemoryCard(memory, context);
-    } catch (_) {
-      node = null;
+    if (card) {
+      // memory.js renders a full MemoryCard only; a bare reference would show blank fields.
+      try {
+        node = window.traceback.renderMemoryCard(card, { ...context, match: ref.match });
+      } catch (_) {
+        node = null;
+      }
     }
-    // memory.js's stub returns a bare text div; treat that like "not implemented yet" too.
-    if (!node || node.textContent.includes("TODO") || !node.firstElementChild) node = fallbackCard(memory);
+    // No card (e.g. sample replay without Atlas), or memory.js's stub: use our own fallback card.
+    if (!node || node.textContent.includes("TODO") || !node.firstElementChild) {
+      node = fallbackCard(card || {
+        memoryId: ref.memoryId, version: ref.version, ownerTeamId: ref.ownerTeamId, match: ref.match,
+        title: "Replayed webhook: record the replay, credit once",
+      });
+    }
     const slot = $("memory-slot");
     slot.innerHTML = "";
-    slot.appendChild(node);
+    slot.appendChild(node); // replaces memory.js's idle team list (.tb-list) while a run is on screen
     drawIcons(slot);
   }
 
