@@ -99,3 +99,41 @@ def test_a_crashing_agent_still_finishes_the_run(api):
     events = client.get(f"/runs/{run_id}/events", headers=PAY).json()
     assert events[-1]["type"] == "run_finished"
     assert client.get(f"/runs/{run_id}", headers=PAY).json()["status"] in ("finished", "error")
+
+
+def test_run_records_what_it_ran_with_and_honours_promote_off():
+    repo = MemoryRunRepo()
+    store = FakeMemoryStore(seed_example=False)  # case A, no memory: a verified run would normally promote
+    content = (ROOT / "cases" / "A" / "reference" / "webhooks.py").read_text()
+    llm = ScriptedLLM([[("propose_fix", {"path": "app/webhooks.py", "new_content": content, "cause": "c"})]])
+    deps = AgentDeps(runner=FakeRunner(), memory=store, llm=llm, synchronous=True, promote=False)
+    app.dependency_overrides[get_repo] = lambda: repo
+    app.dependency_overrides[get_agent_deps] = lambda: deps
+    try:
+        client = TestClient(app)
+        _, run_id = start(client, case_id="A")
+        doc = repo.get_run(run_id)
+        assert doc["agent"]["runner"] == "FakeRunner" and doc["agent"]["store"] == "FakeMemoryStore"
+        assert doc["agent"]["promote"] is False and doc["budget"]["maxToolCalls"] == 8
+        assert doc["outcome"] == "verified" and store.memories == {}  # nothing promoted
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_strict_runner_refuses_to_start_without_the_fixture_db(monkeypatch):
+    from api import deps as api_deps
+    from core.config import get_settings
+
+    monkeypatch.setenv("AGENT_RUNNER", "local")
+    monkeypatch.setenv("FIXTURE_MONGODB_URI", "mongodb://127.0.0.1:1")
+    monkeypatch.setenv("LLM_API_KEY", "x")
+    monkeypatch.setenv("LLM_MODEL", "claude-haiku-5-5")
+    get_settings.cache_clear()
+    api_deps._agent_deps.cache_clear()
+    try:
+        with pytest.raises(Exception) as e:
+            api_deps.get_agent_deps()
+        assert getattr(e.value, "status_code", None) == 503 and "fixture database" in e.value.detail
+    finally:
+        get_settings.cache_clear()
+        api_deps._agent_deps.cache_clear()

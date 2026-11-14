@@ -13,6 +13,7 @@ from contracts.models import (
     FilePatch,
     MemoryCandidate,
     MemoryDraft,
+    MemoryOutcome,
     MemoryUseDecision,
     Observations,
     Principal,
@@ -42,10 +43,10 @@ class MemoryStore(Protocol):
         version: int,
         run_id: str,
         decision: MemoryUseDecision,
-    ) -> None:
-        """Record what the agent did with a memory. The store decides the governance outcome:
-        used + verified -> renewed; used + preconditions held + verification failed -> disputed;
-        rejected because preconditions were false -> near_miss."""
+    ) -> MemoryOutcome | None:
+        """Record what the agent did with a memory. The store decides the governance outcome and returns it:
+        used + verified -> "renewed"; used + preconditions held + verification failed -> "disputed";
+        rejected because preconditions were false -> "near_miss"; nothing changed -> None."""
         ...
 
     def promote(self, principal: Principal, draft: MemoryDraft, verification: VerificationResult) -> str:

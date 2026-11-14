@@ -146,3 +146,81 @@ def test_calibration_summary_reads_the_timeline():
     assert row["attempt1"] is False and row["attempts"] == 2 and row["outcome"] == "verified"
     assert row["failed_on_attempt1"] == ["test_replay_recorded_for_reconciliation"]
     assert row["reads"] == ["app/webhooks.py"] and row["docs_opened"] == []
+
+
+# ---------------------------------------------------------------- P1-7 / P1-9: receipts, placebo, escalation
+
+
+class _StoreSays(FakeMemoryStore):
+    """A store whose record_use returns a fixed outcome, to prove the receipt follows the store."""
+
+    def __init__(self, outcome):
+        super().__init__()
+        self.outcome = outcome
+
+    def record_use(self, *args, **kw):
+        super().record_use(*args, **kw)
+        return self.outcome
+
+
+def outcomes(sink) -> list[str]:
+    return [e.payload["outcome"] for e in sink.events if e.type == "memory_outcome"]
+
+
+def test_receipt_reports_what_the_store_did_not_what_we_expected():
+    _, sink = run("B", _StoreSays(None), [[("propose_fix", fix("B"))]])
+    assert outcomes(sink) == []  # verified, but the store changed nothing (renewal off / expired mid-run)
+    _, sink = run("B", _StoreSays("renewed"), [[("propose_fix", fix("B"))]])
+    assert outcomes(sink) == ["renewed"]
+
+
+def test_fake_store_disputes_when_conditions_held_but_the_fix_failed():
+    store = FakeMemoryStore()
+    bad = fix("B", without_convention=True)
+    view, sink = run("B", store, [[("propose_fix", bad)], [("propose_fix", bad)]], promote=False)
+    assert view.outcome == "escalated" and outcomes(sink) == ["disputed"]
+    assert not store.memories  # paused: no longer recalled
+
+
+def test_placebo_is_named_in_a_recall_event_and_never_recorded(tmp_path, monkeypatch):
+    import agent.loop as loop
+
+    seed = FakeMemoryStore().memories
+    placebo = next(iter(seed.values())).candidate.model_copy(update={"memory_id": "placebo_x"})
+    path = tmp_path / "placebo_memories.json"
+    path.write_text(json.dumps([placebo.model_dump(by_alias=True, mode="json")]))
+    monkeypatch.setattr(loop, "PLACEBO_FILE", path)
+    store = FakeMemoryStore()
+    view, sink = run("B", store, [[("propose_fix", fix("B"))]], memory_mode="placebo", promote=False)
+    recall = next(e for e in sink.events if e.type == "recall").payload
+    assert recall["count"] == 1 and recall["memories"][0]["memoryId"] == "placebo_x"
+    assert store.uses == [] and outcomes(sink) == [] and not view.seen_before
+
+
+def test_missing_placebo_file_says_so_and_runs_without(tmp_path, monkeypatch):
+    import agent.loop as loop
+
+    monkeypatch.setattr(loop, "PLACEBO_FILE", tmp_path / "nope.json")
+    _, sink = run("B", FakeMemoryStore(), [[("propose_fix", fix("B"))]], memory_mode="placebo", promote=False)
+    assert "recall" not in types(sink)
+    assert any(e.type == "error" and "placebo" in e.payload["message"] for e in sink.events)
+
+
+def test_escalation_summary_is_copyable_and_says_why():
+    _, sink = run("C", FakeMemoryStore(), [[("propose_fix", fix("A", without_convention=True))], "I am not sure."])
+    done = sink.events[-1].payload
+    assert done["outcome"] == "escalated"
+    text = done["escalation"]
+    assert "duplicate key is `customer_id`" in text and "run run_test" in text and "Last proposed fix" in text
+
+
+def test_verified_runs_have_no_escalation():
+    _, sink = run("B", FakeMemoryStore(), [[("propose_fix", fix("B"))]])
+    assert sink.events[-1].payload["escalation"] is None
+
+
+def test_corrections_reach_the_agent():
+    from agent.loop import _memory_block
+
+    mem = next(iter(FakeMemoryStore().memories.values())).candidate
+    assert "does NOT apply to: unique index on a non-event field" in _memory_block(mem)

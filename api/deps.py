@@ -23,14 +23,43 @@ def get_repo() -> RunRepo:
 
 @lru_cache
 def _agent_deps() -> AgentDeps:
+    """Built once per process. AGENT_RUNNER / AGENT_STORE = auto falls back to the fakes (and says so in the
+    log); local / atlas refuse to start instead, so an experiment can never silently run on fakes."""
     from agent.llm import get_llm
     from agent.run import git_revision, pick_runner, pick_store
+    from core.config import get_settings
 
+    s = get_settings()
     llm = get_llm()  # raises RuntimeError if LLM_API_KEY / LLM_MODEL are missing
-    runner, runner_name = pick_runner("auto")
-    store, store_name = pick_store("auto", seed=True)
-    print(f"[api] agent: {llm.model} · {runner_name} · {store_name}")
-    return AgentDeps(runner=runner, memory=store, llm=llm, revision=git_revision())
+    if s.agent_runner == "local":
+        _require_fixture_db()
+    try:
+        runner, runner_name = pick_runner(s.agent_runner)
+        store, store_name = pick_store(s.agent_store, seed=True)
+    except SystemExit as e:  # pick_store("atlas") exits the CLI; here it means "not configured"
+        raise RuntimeError(str(e)) from None
+    print(f"[api] agent: {llm.model} · {runner_name} · {store_name} · promote={s.agent_promote}")
+    return AgentDeps(
+        runner=runner,
+        memory=store,
+        llm=llm,
+        revision=git_revision(),
+        promote=s.agent_promote,
+        runner_name=runner_name,
+        store_name=store_name,
+    )
+
+
+def _require_fixture_db() -> None:
+    from pymongo import MongoClient
+
+    from core.config import get_settings
+
+    try:
+        uri = get_settings().fixture_mongodb_uri.get_secret_value()
+        MongoClient(uri, serverSelectionTimeoutMS=1500).admin.command("ping")
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"AGENT_RUNNER=local but the fixture database is unreachable ({type(e).__name__})") from None
 
 
 def get_agent_deps() -> AgentDeps:

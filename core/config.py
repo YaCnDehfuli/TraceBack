@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     agent_max_patch_attempts: int = 2
     agent_deadline_seconds: int = 120
 
+    # What the API runs the agent with. "auto" falls back to the fakes when the fixture database or Atlas
+    # isn't reachable (fine for a laptop demo). "local" / "atlas" refuse to start instead (experiments).
+    agent_runner: str = "auto"  # auto | local | fake
+    agent_store: str = "auto"  # auto | atlas | fake
+    # False for experiment servers: a run never creates a new memory (record_use still runs).
+    agent_promote: bool = True
+
     # Demo identities: API key -> principal fields (camelCase JSON in .env)
     demo_principals: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
