@@ -5,33 +5,88 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Traceback · Memory with receipts</title>
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, sans-serif; color: #1d232a; }
-    body { margin: 0; background: #f6f7f9; }
-    header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #dde1e6; }
-    header h1 { font-size: 18px; margin: 0; }
-    #identity { margin-left: auto; padding: 6px 12px; border-radius: 999px; border: 1px solid #c5ccd3; font-weight: 600; }
-    main { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; padding: 20px; }
-    section { background: #fff; border: 1px solid #dde1e6; border-radius: 10px; padding: 16px; min-height: 300px; }
-    #timeline li { font-size: 18px; margin: 6px 0; }
-    #status { color: #5b6670; font-size: 13px; }
+    :root {
+      --bg: #f5f6f8; --panel: #ffffff; --ink: #1b2129; --muted: #5f6b77; --line: #dfe3e8;
+      --ok: #157347; --ok-bg: #e7f5ec; --warn: #9a6200; --warn-bg: #fdf3e1; --bad: #b42318; --bad-bg: #fdecea;
+      --team: #0f766e; --team-bg: #e6f4f2;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--ink);
+    }
+    body.team-platform { --team: #6d28d9; --team-bg: #f1ebfd; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); }
+
+    header { display: flex; align-items: center; gap: 18px; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+    .brand { font-weight: 700; font-size: 20px; letter-spacing: -0.01em; }
+    .brand small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+    #incident-title { font-size: 18px; font-weight: 600; }
+    #incident-title::before { content: "Incident · "; color: var(--muted); font-weight: 500; }
+    #identity {
+      margin-left: auto; padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; font-size: 15px;
+      color: var(--team); background: var(--team-bg); border: 2px solid var(--team); cursor: pointer;
+    }
+
+    main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; padding: 20px 24px 120px; }
+    section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+    section.panel > h2 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+
+    #answer { font-size: 20px; font-weight: 600; line-height: 1.4; padding: 14px 16px; border-radius: 10px; background: #eef1f4; margin-bottom: 18px; }
+    #answer.ok { background: var(--ok-bg); color: var(--ok); }
+    #answer.warn { background: var(--warn-bg); color: var(--warn); }
+    #answer.bad { background: var(--bad-bg); color: var(--bad); }
+    #answer.idle { color: var(--muted); font-weight: 500; }
+
+    #timeline { list-style: none; margin: 0; padding: 0; }
+    #timeline li { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; padding: 8px 0; font-size: 18px; animation: appear .25s ease-out; }
+    #timeline li .icon { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; font-weight: 700; background: #eef1f4; color: var(--muted); }
+    #timeline li.ok .icon { background: var(--ok-bg); color: var(--ok); }
+    #timeline li.bad .icon { background: var(--bad-bg); color: var(--bad); }
+    #timeline li.warn .icon { background: var(--warn-bg); color: var(--warn); }
+    #timeline li.memory .icon { background: var(--team-bg); color: var(--team); }
+    #timeline li .sub { display: block; font-size: 14px; color: var(--muted); margin-top: 2px; }
+    #timeline li.minor { font-size: 15px; color: var(--muted); }
+    @keyframes appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    pre.patch { margin: 8px 0 0; padding: 10px 0; background: #0f1720; color: #d8dee6; border-radius: 8px; font: 13px/1.55 Consolas, "Cascadia Mono", monospace; overflow-x: auto; }
+    pre.patch .line { display: block; padding: 0 12px; white-space: pre; }
+    pre.patch .line.from-memory { background: rgba(45, 212, 191, 0.18); box-shadow: inset 3px 0 0 #2dd4bf; }
+    pre.patch .tag { margin-left: 14px; padding: 1px 8px; border-radius: 999px; background: #2dd4bf; color: #062a26; font: 600 11px "Segoe UI", sans-serif; }
+
+    #outcome { display: none; margin-top: 16px; padding: 10px 16px; border-radius: 999px; font-weight: 700; font-size: 17px; width: fit-content; }
+    #outcome.ok { display: block; background: var(--ok-bg); color: var(--ok); }
+    #outcome.warn { display: block; background: var(--warn-bg); color: var(--warn); }
+    #outcome.bad { display: block; background: var(--bad-bg); color: var(--bad); }
+
+    #memory-slot:empty::before { content: "No memory in play yet."; color: var(--muted); }
+    .memory-fallback { border: 2px solid var(--team); border-radius: 12px; padding: 14px; }
+    .memory-fallback .owner { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--team-bg); color: var(--team); font-weight: 600; font-size: 13px; }
+
+    #status { position: fixed; left: 24px; bottom: 16px; font-size: 13px; color: var(--muted); }
+    #keys { position: fixed; left: 50%; transform: translateX(-50%); bottom: 14px; font-size: 13px; color: var(--muted); }
+    #keys kbd { font: 600 12px inherit; padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: #fff; }
     #voice-panel { position: fixed; right: 20px; bottom: 20px; }
   </style>
 </head>
-<body>
+<body class="team-payments">
   <!-- P3 owns this page and app.js. P2 owns memory.js (the memory card). P1 owns voice.js. -->
   <header>
-    <h1>Traceback</h1>
-    <span id="incident-title">Duplicate webhook crashes payments</span>
+    <div class="brand">Traceback<small>Memory with receipts</small></div>
+    <span id="incident-title">Waiting for an incident</span>
     <select id="identity" aria-label="Acting as"></select>
   </header>
   <main>
-    <section id="run-panel" aria-label="Run">
+    <section class="panel" id="run-panel" aria-label="Run">
       <h2>Run</h2>
+      <div id="answer" class="idle">Press 2 to start the Reuse run, or 0 to replay the sample run.</div>
       <ol id="timeline"></ol>
-      <p id="status">Loading…</p>
+      <div id="outcome"></div>
     </section>
-    <section id="memory-panel" aria-label="Memory"><h2>Memory</h2></section>
+    <section class="panel" id="memory-panel" aria-label="Memory">
+      <h2>Memory</h2>
+      <div id="memory-slot"></div>
+    </section>
   </main>
+  <div id="keys"><kbd>1</kbd> Earn · <kbd>2</kbd> Reuse · <kbd>3</kbd> Refuse · <kbd>4</kbd> Fence · <kbd>5</kbd> Forget · <kbd>0</kbd> sample</div>
+  <p id="status">Starting…</p>
   <div id="voice-panel"></div>
   <script src="app.js"></script>
   <script src="memory.js"></script>
