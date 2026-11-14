@@ -150,6 +150,10 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
   content: "No memory in play yet."; display: block; padding: 2rem 1rem; text-align: center;
   border: 2px dashed var(--line); border-radius: 0.75rem; color: var(--muted);
 }
+/* memory.js lists the team's memories in .tb-panel-body: show that list only while no memory is in play,
+   and drop our empty placeholder when the list is there. */
+#memory-panel.has-active-memory .tb-panel-body { display: none; }
+#memory-panel:has(.tb-panel-body) #memory-slot:empty::before { display: none; }
 .memory-fallback { border: 2px solid var(--team); border-radius: 0.75rem; overflow: hidden; animation: appear 0.3s ease-out; }
 .memory-fallback .memory-head {
   display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between;
