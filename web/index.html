@@ -1,38 +1,44 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Traceback · Memory with receipts</title>
-  <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, sans-serif; color: #1d232a; }
-    body { margin: 0; background: #f6f7f9; }
-    header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #dde1e6; }
-    header h1 { font-size: 18px; margin: 0; }
-    #identity { margin-left: auto; padding: 6px 12px; border-radius: 999px; border: 1px solid #c5ccd3; font-weight: 600; }
-    main { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; padding: 20px; }
-    section { background: #fff; border: 1px solid #dde1e6; border-radius: 10px; padding: 16px; min-height: 300px; }
-    #timeline li { font-size: 18px; margin: 6px 0; }
-    #status { color: #5b6670; font-size: 13px; }
-    #voice-panel { position: fixed; right: 20px; bottom: 20px; }
-  </style>
+  <!-- Vendored copies (no CDN at the venue): Pico 2.1.1, Prism 1.30.0, Lucide 1.73.0. -->
+  <link rel="stylesheet" href="vendor/pico.min.css">
+  <link rel="stylesheet" href="vendor/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <!-- P3 owns this page and app.js. P2 owns memory.js (the memory card). P1 owns voice.js. -->
-  <header>
-    <h1>Traceback</h1>
-    <span id="incident-title">Duplicate webhook crashes payments</span>
+<body class="team-payments">
+  <!-- P3 owns this page, app.js and styles.css. P2 owns memory.js (the memory card). P1 owns voice.js. -->
+  <header class="topbar">
+    <div class="brand"><i data-lucide="receipt"></i><div><strong>Traceback</strong><small>Memory with receipts</small></div></div>
+    <span id="incident-title">Waiting for an incident</span>
     <select id="identity" aria-label="Acting as"></select>
   </header>
-  <main>
-    <section id="run-panel" aria-label="Run">
-      <h2>Run</h2>
+  <main class="layout">
+    <article id="run-panel" aria-label="Run">
+      <h2 class="panel-label"><i data-lucide="activity"></i> Run</h2>
+      <div id="answer" class="idle"><i data-lucide="scan-search"></i><span>Press 2 to start the Reuse run, or 0 to replay the sample run.</span></div>
       <ol id="timeline"></ol>
-      <p id="status">Loading…</p>
-    </section>
-    <section id="memory-panel" aria-label="Memory"><h2>Memory</h2></section>
+      <div id="outcome"></div>
+    </article>
+    <article id="memory-panel" aria-label="Memory">
+      <h2 class="panel-label"><i data-lucide="brain"></i> Memory</h2>
+      <div id="memory-slot"></div>
+    </article>
+    <section id="compare" aria-label="With memory vs without memory" hidden></section>
   </main>
+  <footer class="bottombar">
+    <p id="status">Starting…</p>
+    <div id="keys"><i data-lucide="keyboard"></i>
+      <kbd>1</kbd> Earn <kbd>2</kbd> Reuse <kbd>3</kbd> Refuse <kbd>4</kbd> Fence <kbd>5</kbd> Forget
+      <span class="sep">|</span> <kbd>0</kbd> Sample <kbd>C</kbd> Compare</div>
+  </footer>
   <div id="voice-panel"></div>
+  <script src="vendor/prism.js" data-manual></script>
+  <script src="vendor/prism-python.min.js"></script>
+  <script src="vendor/lucide.min.js"></script>
   <script src="app.js"></script>
   <script src="memory.js"></script>
   <script src="voice.js"></script>
