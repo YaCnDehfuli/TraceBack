@@ -75,17 +75,22 @@ class LocalRunner:
         if not _database_reachable():
             return _result(run_id, case_id, "inconclusive", started, detail="fixture database unreachable")
         prefix = f"fixture_{run_id}"
-        ws = _workspace(case_id, manifest)
+        ws = None
         try:
+            ws = _workspace(case_id, manifest)
             before = _run_pytest(ws, prefix, select=manifest.reproduction_test)
         finally:
-            shutil.rmtree(ws, ignore_errors=True)
+            if ws:
+                shutil.rmtree(ws, ignore_errors=True)
             _drop_databases(prefix)
         if _infra_broken(before):
             return _result(run_id, case_id, "inconclusive", started, before=before, detail=before["output_tail"])
         if before["exit_code"] != 1:
             return _result(run_id, case_id, "inconclusive", started, before=before,
                            detail="case broken: the reproduction test passes on the original code")
+        if _only_errors(before):
+            return _result(run_id, case_id, "inconclusive", started, before=before,
+                           detail="the reproduction test errored instead of failing")
         # For reproduce(), "failed" is the expected outcome: the bug is real.
         return _result(run_id, case_id, "failed", started, before=before)
 
@@ -101,22 +106,34 @@ class LocalRunner:
             return _result(run_id, case_id, "inconclusive", started, detail="fixture database unreachable")
 
         prefix = f"fixture_{run_id}"
-        before_ws, after_ws = _workspace(case_id, manifest), _workspace(case_id, manifest)
+        workspaces: list[Path] = []
         try:
+            workspaces.append(_workspace(case_id, manifest))
+            workspaces.append(_workspace(case_id, manifest))
+            before_ws, after_ws = workspaces
             before = _run_pytest(before_ws, f"{prefix}_b", select=manifest.reproduction_test)
             (after_ws / "app_root" / path).write_text(patch.new_content, encoding="utf-8")
             after = _run_pytest(after_ws, f"{prefix}_a")
         finally:
-            shutil.rmtree(before_ws, ignore_errors=True)
-            shutil.rmtree(after_ws, ignore_errors=True)
+            for ws in workspaces:
+                shutil.rmtree(ws, ignore_errors=True)
             _drop_databases(prefix)
 
-        if _infra_broken(before) or after["exit_code"] not in (0, 1):
-            broken = before if _infra_broken(before) else after
-            return _result(run_id, case_id, "inconclusive", started, before, after, patch_hash, broken["output_tail"])
+        if _infra_broken(before):
+            return _result(run_id, case_id, "inconclusive", started, before, after, patch_hash, before["output_tail"])
         if before["exit_code"] != 1:
             return _result(run_id, case_id, "inconclusive", started, before, after, patch_hash,
                            "case broken: the reproduction test passes on the original code")
+        if _only_errors(before):
+            return _result(run_id, case_id, "inconclusive", started, before, after, patch_hash,
+                           "the reproduction test errored instead of failing")
+        if after["exit_code"] == -1:  # timed out: could be us as well as the patch
+            return _result(run_id, case_id, "inconclusive", started, before, after, patch_hash, after["output_tail"])
+        if after["exit_code"] not in (0, 1):
+            # The same tests just ran on the original code, so a load error now is the patch's
+            # (e.g. a SyntaxError in the patched file). Only the last line: no trusted-test source.
+            return _result(run_id, case_id, "failed", started, before, after, patch_hash,
+                           f"the patched app did not load: {_last_line(after['output_tail'])}")
         status = "passed" if after["exit_code"] == 0 else "failed"
         return _result(run_id, case_id, status, started, before, after, patch_hash)
 
@@ -140,7 +157,8 @@ def _database_reachable() -> bool:
     try:
         from pymongo import MongoClient
 
-        MongoClient(fixture_uri(), serverSelectionTimeoutMS=2000).admin.command("ping")
+        with MongoClient(fixture_uri(), serverSelectionTimeoutMS=2000) as client:
+            client.admin.command("ping")
         return True
     except Exception:
         return False
@@ -150,10 +168,10 @@ def _drop_databases(prefix: str) -> None:
     try:
         from pymongo import MongoClient
 
-        client = MongoClient(fixture_uri(), serverSelectionTimeoutMS=2000)
-        for name in client.list_database_names():
-            if name.startswith(prefix):
-                client.drop_database(name)
+        with MongoClient(fixture_uri(), serverSelectionTimeoutMS=2000) as client:
+            for name in client.list_database_names():
+                if name.startswith(prefix):
+                    client.drop_database(name)
     except Exception:
         pass
 
@@ -182,21 +200,26 @@ def _run_pytest(ws: Path, db_prefix: str, select: str | None = None) -> dict:
         exit_code, output_tail = -1, f"timed out after {TIMEOUT_S}s"
 
     tests: list[TestOutcome] = []
-    junit_bytes = b""
-    if junit.exists():
-        junit_bytes = junit.read_bytes()
-        for case in ET.fromstring(junit_bytes).iter("testcase"):
-            passed, detail = True, None
-            for tag in ("failure", "error"):
-                node = case.find(tag)
-                if node is not None:
-                    passed, detail = False, (node.get("message") or "")[:DETAIL_LIMIT]
-                    break
-            skipped = case.find("skipped")
-            if passed and skipped is not None:
-                detail = "skipped: " + (skipped.get("message") or "")[:DETAIL_LIMIT]
-            tests.append(TestOutcome(name=case.get("name") or "", passed=passed, detail=detail))
+    errored = failed = False
+    junit_bytes = junit.read_bytes() if junit.exists() else b""
+    try:
+        cases = list(ET.fromstring(junit_bytes).iter("testcase")) if junit_bytes else []
+    except ET.ParseError:  # cut off (crash, kill): no trustworthy results, so inconclusive
+        cases = []
+    for case in cases:
+        passed, detail = True, None
+        for tag in ("failure", "error"):
+            node = case.find(tag)
+            if node is not None:
+                passed, detail = False, (node.get("message") or "")[:DETAIL_LIMIT]
+                failed, errored = failed or tag == "failure", errored or tag == "error"
+                break
+        skipped = case.find("skipped")
+        if passed and skipped is not None:
+            detail = "skipped: " + (skipped.get("message") or "")[:DETAIL_LIMIT]
+        tests.append(TestOutcome(name=case.get("name") or "", passed=passed, detail=detail))
     return {
+        "only_errors": errored and not failed,
         "exit_code": exit_code,
         "tests": tests,
         "junit_sha256": _sha256(junit_bytes),
@@ -208,6 +231,16 @@ def _run_pytest(ws: Path, db_prefix: str, select: str | None = None) -> dict:
 def _infra_broken(result: dict) -> bool:
     # pytest exit codes: 0 all passed, 1 some failed; anything else is an infrastructure problem.
     return result["exit_code"] not in (0, 1) or not result["tests"]
+
+
+def _only_errors(result: dict) -> bool:
+    # A setup/teardown <error> and no <failure>: the test never got as far as showing the bug.
+    return result.get("only_errors", False)
+
+
+def _last_line(text: str) -> str:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return (lines[-1] if lines else "no output")[:DETAIL_LIMIT]
 
 
 def _result(run_id, case_id, status, started, before=None, after=None, patch_hash=None, detail=None):

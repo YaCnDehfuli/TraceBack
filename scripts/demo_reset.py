@@ -61,9 +61,6 @@ def reseed(db: str) -> bool:
     if proc.returncode == 0:
         print(output or "ok: reseeded")
         return True
-    if "not implemented" in output:
-        print(f"skipped: {output}")
-        return True
     print(f"FAILED: seed_demo.py exited {proc.returncode}\n{output}")
     return False
 
@@ -76,6 +73,9 @@ def check_case_a() -> bool:
     except (ImportError, NotImplementedError) as err:
         print(f"skipped: runner not available on this branch ({err})")
         return True
+    except Exception as err:  # noqa: BLE001 - report it with the other steps, then exit 1
+        print(f"FAILED: case A check crashed: {type(err).__name__}: {err}")
+        return False
     if result.before_failed and result.status == "failed":
         print(f"ok: case A reproduces the bug ({result.duration_ms} ms)")
         return True
