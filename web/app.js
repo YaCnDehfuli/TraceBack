@@ -608,7 +608,7 @@
         console.warn("Traceback: polling run events failed", err);
         // 404: the pill was switched to another team mid-run. Not a lost connection: say so, keep polling, and
         // the run picks up again when the pill goes back.
-        setStatus(err.status === 404 ? "Another team's run: switch the pill back to follow it." : "Connection lost. Retrying…");
+        setStatus(err.status === 404 ? "Another team's run: switch the pill back." : "Connection lost. Retrying…");
       }
       for (const event of events) {
         if (token !== followToken) return;
