@@ -16,10 +16,10 @@ in-process store so tests and offline dev work.
 
 from __future__ import annotations
 
-import inspect
 import json
 import logging
 import re
+import subprocess
 import threading
 from collections.abc import Callable
 from concurrent.futures import Executor, ThreadPoolExecutor
@@ -101,12 +101,27 @@ OnEvent = Callable[[EventLike], None]
 Investigate = Callable[[RunJob, OnEvent], RunView | None]
 
 
+@lru_cache(maxsize=1)
+def _revision() -> str:
+    try:
+        out = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=5)
+        return out.stdout.strip() or "unknown"
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
 def agent_loop(job: RunJob, on_event: OnEvent) -> RunView | None:
-    """Default Investigate: P1's loop, `agent.loop.run_investigation`, reporting through
-    `agent.events.EventSink(on_event=...)`. Imported lazily so this module works before it lands."""
+    """Default Investigate: P1's loop, imported lazily so this module works before it lands.
+
+    Signature confirmed by P1 (#31):
+        run_investigation(principal, case, memory, runner, llm, *, memory_mode="real", budget=None,
+                          sink=None, promote=True, incident_id=None, revision="unknown") -> RunView
+    with `sink=EventSink(run_id, on_event=...)`. The run is persisted before this is called.
+    """
     try:  # agent.events lands with P1's agent loop
         from agent.events import EventSink
 
+        from agent.llm import get_llm
         from agent.loop import run_investigation
     except ImportError as e:
         raise LoopUnavailable(f"agent loop not installed ({e.name})") from e
@@ -114,18 +129,15 @@ def agent_loop(job: RunJob, on_event: OnEvent) -> RunView | None:
     from memory.store import AtlasMemoryStore
     from runner.sandbox import LocalRunner
 
-    sink = EventSink(on_event=on_event)
-    params = inspect.signature(run_investigation).parameters
-    extra: dict[str, Any] = {}
-    for name in ("events", "sink", "event_sink"):  # whichever name P1's loop takes the sink as
-        if name in params:
-            extra[name] = sink
-    for name, value in (("run_id", job.run_id), ("incident_id", job.incident_id)):
-        if name in params:
-            extra[name] = value
     try:
-        return run_investigation(job.principal, job.case, AtlasMemoryStore(), LocalRunner(),
-                                 memory_mode=job.memory_mode, **extra)
+        return run_investigation(
+            job.principal, job.case, AtlasMemoryStore(), LocalRunner(), get_llm(),
+            memory_mode=job.memory_mode,
+            sink=EventSink(job.run_id, on_event=on_event),
+            promote=job.memory_mode == "real",  # off / placebo runs never write memory (experiment)
+            incident_id=job.incident_id,
+            revision=_revision(),
+        )
     except NotImplementedError as e:
         raise LoopUnavailable(str(e) or "agent.loop.run_investigation is not implemented") from e
 

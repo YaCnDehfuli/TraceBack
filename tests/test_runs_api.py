@@ -278,21 +278,32 @@ def test_stub_agent_loop_fails_cleanly(store, monkeypatch):
     assert view["status"] == "error"
 
 
-def test_agent_loop_passes_the_sink_and_ids(store, monkeypatch):
-    class EventSink:
-        def __init__(self, on_event):
-            self.on_event = on_event
+def test_agent_loop_calls_p1s_confirmed_signature(store, monkeypatch):
+    """P1's loop (#31): run_investigation(principal, case, memory, runner, llm, *, memory_mode, budget,
+    sink, promote, incident_id, revision), with sink=EventSink(run_id, on_event=...)."""
+    seen: dict = {}
 
-    def loop(principal, case, memory, runner, budget=None, memory_mode="real", *, events, run_id, incident_id):
+    class EventSink:
+        def __init__(self, run_id, on_event):
+            self.run_id, self.on_event = run_id, on_event
+
+    def loop(principal, case, memory, runner, llm, *, memory_mode="real", budget=None, sink=None,
+             promote=True, incident_id=None, revision="unknown"):
+        seen.update(llm=llm, memory_mode=memory_mode, promote=promote, incident_id=incident_id,
+                    sink_run_id=sink.run_id, revision=revision)
         for e in SAMPLE:
-            events.on_event({"type": e["type"], "payload": e["payload"]})
+            sink.on_event({"type": e["type"], "payload": e["payload"]})
 
     monkeypatch.setitem(sys.modules, "agent.events", types.SimpleNamespace(EventSink=EventSink))
     monkeypatch.setattr("agent.loop.run_investigation", loop)
+    monkeypatch.setattr("agent.llm.get_llm", lambda: "llm")
     monkeypatch.setattr("memory.store.AtlasMemoryStore", lambda: object())
     monkeypatch.setattr("runner.sandbox.LocalRunner", lambda: object())
     events, view = _error_run(make_client(RunService(store, agent_loop, InlineExecutor())))
     assert events[-1]["type"] == "run_finished" and view["status"] == "finished"
+    assert seen["llm"] == "llm" and seen["memory_mode"] == "real" and seen["promote"] is True
+    assert seen["sink_run_id"] == view["runId"] and seen["incident_id"] == view["incidentId"]
+    assert seen["revision"]
 
 
 def test_crash_mid_run_ends_with_an_error_event(store):
