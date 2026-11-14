@@ -85,11 +85,21 @@
     const got = await fetchResults();
     if (!got || got.text === loadedText) return;
     loadedText = got.text;
-    document.getElementById("results-md").innerHTML = markdown(got.text);
+    document.getElementById("results-md").innerHTML = markdown(rawCounts(got.text));
     document.getElementById("results-src").textContent = got.url === "results.md" ? "evals/results/results.md (copy)" : got.url;
     document.getElementById("results-live").hidden = false;
     document.getElementById("results-placeholder").hidden = true;
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  // Only the "## Raw counts per arm" section (its heading and table): readable on a projector. A file that is
+  // already trimmed to that section, or has no such heading, is shown whole.
+  function rawCounts(text) {
+    const lines = text.replace(/\r/g, "").split("\n");
+    const from = lines.findIndex((l) => /^##\s+Raw counts per arm/i.test(l));
+    if (from < 0) return text;
+    const to = lines.findIndex((l, i) => i > from && /^#{1,2}\s/.test(l));
+    return lines.slice(from, to < 0 ? undefined : to).join("\n");
   }
 
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

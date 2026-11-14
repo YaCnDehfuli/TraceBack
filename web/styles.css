@@ -1,8 +1,8 @@
 /* Traceback run view, "paper trail": a quiet light desk where the one expressive object is the memory,
    printed as a receipt and stamped (PROVEN / REFUSED / NOT APPLIED / VOID). Light on purpose: projectors
    wash out dark greys. Pico (vendor/pico.min.css) styles the basics; the code block is the only dark object.
-   Fluid: the root size follows the viewport (see --pico-font-size) and everything else is in rem/em, so the
-   page fills any screen the same way it fills 1280x720 (20px root), just bigger. */
+   Fluid: everything is in rem/em. The CSS clamp below is the starting root size; app.js (fit) then picks the
+   largest root size at which nothing scrolls, so the page fills any window at any aspect ratio. */
 
 @font-face {
   font-family: "Geist"; font-weight: 100 900; font-display: swap;
@@ -23,8 +23,9 @@
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --gutter: clamp(16px, 2.5vw, 48px);
+  --fine: max(0.9rem, 18px); /* the smallest text a judge reads: never under 18px, however small fit makes the root (body text uses max(…rem, 18px) too) */
 
-  /* 20px at 1280x720, 30px at 1920x1080, 40px at 2560x1440: whichever of width or height runs out first. */
+  /* Start: 20px at 1280x720, 30px at 1920x1080, 40px at 2560x1440. app.js (fit) refines it to fill the window. */
   --pico-font-size: clamp(16px, min(1.5625vw, 2.777vh), 48px);
 
   --pico-font-family-sans-serif: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -34,9 +35,9 @@
   --pico-muted-color: var(--muted);
   --pico-muted-border-color: var(--line);
 }
-/* Team colour = whose memory. On <body> for the identity, and on a receipt for its owner. */
-.team-payments { --team: #0e7490; --team-bg: #e0f4f8; --memory-hl: #22d3ee; }
-.team-platform { --team: #6d28d9; --team-bg: #efe8fd; --memory-hl: #a78bfa; }
+/* Team colour = whose memory. On <body> for the identity, on a receipt for its owner, on a Fence column for its team. */
+.team-payments, #memory-slot .tb-fence-col:first-child { --team: #0e7490; --team-bg: #e0f4f8; --memory-hl: #22d3ee; }
+.team-platform, #memory-slot .tb-fence-col:last-child { --team: #6d28d9; --team-bg: #efe8fd; --memory-hl: #a78bfa; }
 
 body {
   --pico-primary: var(--team);
@@ -46,6 +47,7 @@ body {
   /* One screen: header, the desk, the key bar. Columns scroll on their own if they ever overflow. */
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; height: 100dvh;
 }
+html { transition: font-size 0.2s var(--ease); } /* fit's size changes glide instead of snapping */
 svg.lucide { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; stroke-width: 2; }
 :focus-visible { outline: 2px solid var(--team); outline-offset: 2px; }
 
@@ -59,14 +61,14 @@ body > header.topbar {
 .brand .logo { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.5rem; background: var(--ink); color: #fff; }
 .brand .logo svg.lucide { width: 1.15rem; height: 1.15rem; }
 .brand strong { display: block; font-size: 1.1rem; font-weight: 650; letter-spacing: -0.03em; }
-.brand small { display: block; margin-top: 0.15rem; font: 500 0.6rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.brand small { display: block; margin-top: 0.1rem; font-size: var(--fine); font-weight: 500; color: var(--muted); }
 #incident-title {
   flex: 1; min-width: 14rem; font-size: 1.1rem; font-weight: 600; letter-spacing: -0.015em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 #live {
   display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.2rem 0.7rem;
-  border: 1px solid var(--line-strong); border-radius: 999px; font: 600 0.75rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.06em;
+  border: 1px solid var(--line-strong); border-radius: 999px; font: 600 var(--fine)/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.06em;
 }
 #live::before { content: ""; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--team); }
 #live[data-mode="live"]::before { animation: ping 1.4s ease-out infinite; }
@@ -76,7 +78,7 @@ body > header.topbar {
 select#identity {
   width: auto; margin: 0; padding: 0.4rem 2.4rem 0.4rem 1rem;
   border: 1px solid color-mix(in srgb, var(--team) 45%, transparent); border-radius: 999px;
-  background-color: var(--team-bg); color: var(--team); font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  background-color: var(--team-bg); color: var(--team); font-size: var(--fine); font-weight: 600; cursor: pointer;
   transition: color 0.3s, background-color 0.3s, border-color 0.3s;
 }
 @keyframes ping { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--team) 60%, transparent); } to { box-shadow: 0 0 0 0.45rem transparent; } }
@@ -84,20 +86,20 @@ select#identity {
 /* ------------------------------------------------------------------ the desk: answer on top, run | receipt below */
 
 main.layout {
-  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); grid-template-rows: auto minmax(0, 1fr);
+  display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem 2.5rem; width: 100%; margin: 0; padding: 0.75rem var(--gutter) 0.5rem; min-height: 0;
 }
 #answer { grid-column: 1 / -1; }
 main.layout > article {
   margin: 0; padding: 0.25rem 0 0; background: none; box-shadow: none;
-  overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+  overflow: hidden auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
 }
 
 #answer {
   display: flex; align-items: flex-start; gap: 0.8rem; margin: 0;
   padding: 0.55rem 1.2rem; border: 1px solid var(--line); border-left: 6px solid var(--line-strong); border-radius: 0.6rem;
   background: var(--paper); color: var(--ink);
-  font-size: 1.3rem; font-weight: 650; letter-spacing: -0.025em; line-height: 1.2;
+  font-size: 1.5rem; font-weight: 650; letter-spacing: -0.025em; line-height: 1.2;
   transition: border-color 0.3s;
 }
 #answer > svg.lucide { width: 1.1em; height: 1.1em; margin-top: 0.05em; stroke-width: 2.5; }
@@ -113,38 +115,45 @@ main.layout > article {
 
 /* ------------------------------------------------------------------ step timeline */
 
-#timeline { list-style: none; margin: 0; padding: 0; }
+#timeline, #ghosts { list-style: none; margin: 0; padding: 0; }
 /* The progress line: each step's connector draws down when the next step lands. */
-#timeline li:not(:last-child)::before {
+:is(#timeline, #ghosts) li:not(:last-child)::before {
   content: ""; position: absolute; left: calc(0.95rem - 1px); top: 1.9rem; bottom: 0; width: 2px;
   background: var(--line-strong); transform-origin: top; animation: grow 0.3s var(--ease);
 }
 @keyframes grow { from { transform: scaleY(0); } }
-#timeline li {
+:is(#timeline, #ghosts) li {
   position: relative; display: grid; grid-template-columns: 1.9rem minmax(0, 1fr); gap: 0.9rem;
   margin: 0; padding: 0 0 0.35rem; list-style: none; scroll-margin: 1rem 0;
-  font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3;
+  font-size: max(1.05rem, 18px); font-weight: 600; letter-spacing: -0.01em; line-height: 1.3;
   animation: rise 0.25s var(--ease);
 }
-#timeline .icon {
+:is(#timeline, #ghosts) .icon {
   position: relative; z-index: 1; display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%;
   background: var(--paper); border: 1px solid var(--line-strong); color: var(--ink);
 }
-#timeline .icon svg.lucide { width: 1rem; height: 1rem; }
-#timeline li > div { padding-top: 0.15rem; min-width: 0; }
+:is(#timeline, #ghosts) .icon svg.lucide { width: 1rem; height: 1rem; }
+:is(#timeline, #ghosts) li > div { padding-top: 0.15rem; min-width: 0; }
 #timeline li.ok .icon { border-color: var(--ok); color: var(--ok); }
 #timeline li.bad .icon { border-color: var(--bad); color: var(--bad); }
 #timeline li.warn .icon { border-color: var(--warn); color: var(--warn); }
 #timeline li.memory .icon { background: var(--team); border-color: var(--team); color: #fff; }
-#timeline li.minor { font-size: 0.9rem; font-weight: 450; color: var(--muted); }
+#timeline li.minor { font-size: var(--fine); font-weight: 450; color: var(--muted); }
 .sub {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;
-  margin-top: 0.1rem; font-size: 0.9rem; font-weight: 400; letter-spacing: 0; color: var(--muted);
+  margin-top: 0.1rem; font-size: var(--fine); font-weight: 400; letter-spacing: 0; color: var(--muted);
 }
 #timeline li.bad .sub { -webkit-line-clamp: 2; }
 
+/* The five steps still ahead (Observe, Recall, Check, Fix, Test): greyed, dashed, the next one breathing. */
+#ghosts li { color: var(--muted); font-weight: 500; animation: none; }
+#ghosts li:not(:last-child)::before { background: repeating-linear-gradient(var(--line-strong) 0 0.25rem, transparent 0.25rem 0.5rem); animation: none; }
+#ghosts .icon { border-style: dashed; background: var(--bg); color: var(--muted); }
+#run-panel:is([data-live="live"], [data-live="replay"]) #ghosts li:first-child .icon { border: 1px solid var(--team); color: var(--team); animation: ping 1.4s ease-out infinite; }
+#run-panel:is([data-live="live"], [data-live="replay"]) #ghosts .sub { display: none; }
+
 /* The "now" line under the steps: what the agent is doing, with the run's clock. */
-#now { display: flex; align-items: center; gap: 0.9rem; margin: 0.1rem 0 0; font-size: 0.9rem; color: var(--muted); }
+#now { display: flex; align-items: center; gap: 0.9rem; margin: 0 0 0.35rem; font-size: var(--fine); color: var(--muted); }
 #now .dot { width: 0.6rem; height: 0.6rem; margin: 0 0.65rem; flex: none; border-radius: 50%; background: var(--team); animation: ping 1.4s ease-out infinite; }
 #now .text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #now .clock { font-family: var(--mono); font-variant-numeric: tabular-nums; }
@@ -154,56 +163,78 @@ main.layout > article {
 .mismatch .need, .mismatch .have { padding: 0.35rem 0.8rem; border: 1px solid var(--line-strong); border-radius: 0.6rem; background: var(--paper); }
 .mismatch .have { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
 .mismatch .ne { font-size: 1.6rem; font-weight: 700; color: var(--bad); }
-.mismatch code { padding: 0; background: none; color: inherit; font-size: 0.95rem; font-weight: 600; }
+.mismatch code { padding: 0; background: none; color: inherit; font-size: var(--fine); font-weight: 600; }
 
 /* ------------------------------------------------------------------ patch: a window around the memory's lines */
 
 pre.patch {
   margin: 0.4rem 0 0.2rem; padding: 0.45rem 0; border-radius: 0.6rem;
-  background: var(--code-bg); color: #e6e6e6; font-size: 0.95rem; line-height: 1.4; overflow: hidden;
+  background: var(--code-bg); color: #e6e6e6; font-size: max(0.95rem, 18px); line-height: 1.4; overflow: hidden;
 }
 pre.patch .line { position: relative; display: block; padding: 0 1rem 0 3.2rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 pre.patch .line::before {
-  counter-increment: line; content: counter(line);
+  content: attr(data-n);
   position: absolute; left: 0; width: 2.3rem; text-align: right; font-size: 0.8rem; line-height: 1.9; color: #8b8f96;
 }
 pre.patch .line.near { opacity: 0.55; }
+pre.patch .line.gap { color: #8b8f96; line-height: 1.2; }
 pre.patch .line.from-memory {
-  padding-block: 0.15rem; font-size: 1.05rem; font-weight: 600;
+  padding-block: 0.15rem; font-size: max(1.05rem, 18px); font-weight: 600;
   background: color-mix(in srgb, var(--memory-hl) 22%, transparent); box-shadow: inset 4px 0 0 var(--memory-hl);
 }
 pre.patch .line.empty { padding-block: 0.15rem; } /* only the dashed "empty" box, where the memory's line was */
 pre.patch .line.empty::after {
   content: "empty"; display: block; padding: 0 0.6rem; border: 1px dashed #8b8f96; border-radius: 0.3rem;
-  color: #8b8f96; font-size: 0.8rem; line-height: 1.7;
+  color: #8b8f96; font-size: var(--fine); line-height: 1.7;
 }
+/* Reuse: a highlight sweeps across the memory's line while the receipt glows back (#memory-slot.echo). */
+pre.patch .line.from-memory::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--memory-hl) 60%, transparent) 50%, transparent);
+  transform: translateX(-100%); animation: sweep 1s var(--ease) 0.3s both;
+}
+@keyframes sweep { to { transform: translateX(100%); opacity: 0; } }
 /* A patch with no memory lines shows the whole file: cap it and fade the rest out. */
-pre.patch.full { max-height: 10em; mask-image: linear-gradient(#000 75%, transparent); }
+pre.patch.full { max-height: 6.5em; mask-image: linear-gradient(#000 75%, transparent); }
 pre.patch .tag {
   display: flex; align-items: center; gap: 0.35rem; width: fit-content; margin: 0.25rem 0 0.1rem;
   padding: 0.05rem 0.6rem; border-radius: 999px; background: var(--memory-hl); color: #06141a;
-  font: 600 0.75rem/1.5 var(--pico-font-family-sans-serif); white-space: normal;
+  font: 600 var(--fine)/1.5 var(--pico-font-family-sans-serif); white-space: normal;
 }
 pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 
-/* ------------------------------------------------------------------ outcome badge (also the compare badges) */
+/* ------------------------------------------------------------------ outcome badge */
 
 #outcome { display: none; }
-#outcome.ok, #outcome.warn, #outcome.bad, .badge {
+#outcome.ok, #outcome.warn, #outcome.bad {
   display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem;
   padding: 0.45rem 1.1rem 0.45rem 0.9rem; border-radius: 999px; color: #fff;
-  font-size: 1.05rem; font-weight: 650; animation: rise 0.3s var(--ease);
+  font-size: max(1.05rem, 18px); font-weight: 650; animation: rise 0.3s var(--ease);
 }
-#outcome.ok, .badge.ok { background: var(--ok); }
-#outcome.warn, .badge.warn { background: var(--warn); }
-#outcome.bad, .badge.bad { background: var(--bad); }
-.badge::first-letter { text-transform: uppercase; }
+#outcome.ok { background: var(--ok); }
+#outcome.warn { background: var(--warn); }
+#outcome.bad { background: var(--bad); }
+
+/* An escalated run's handoff (run_finished.escalation): four lines, "more" for the rest, Copy. */
+#handoff { margin-top: 0.6rem; padding: 0.6rem 0.9rem; border-left: 3px solid var(--warn); background: var(--paper); font-size: var(--fine); color: var(--muted); }
+#handoff p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; margin: 0 0 0.3rem; white-space: pre-line; }
+#handoff p.open { display: block; }
+#handoff button { width: auto; margin: 0 0.4rem 0 0; padding: 0.15rem 0.6rem; border: 1px solid var(--line-strong); background: none; color: var(--ink); font-size: var(--fine); }
+
+/* Forget's toast, over the key bar. */
+.toast {
+  position: fixed; left: 0; right: 0; bottom: 3.5rem; z-index: 60; display: flex; align-items: center; gap: 0.5rem;
+  width: fit-content; margin-inline: auto; padding: 0.5rem 1.1rem; border-radius: 999px;
+  background: var(--ink); color: #fff; font-size: var(--fine); font-weight: 600; animation: rise 0.3s var(--ease);
+}
 
 /* ------------------------------------------------------------------ the receipt: our fallback and memory.js's .tb-card
    memory.js injects its own <style> and inline team colours; the #memory-slot prefix (and !important against
    inline styles) gives both the same printed-receipt look. */
 
 #memory-slot { position: relative; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.08)) drop-shadow(0 8px 14px rgb(0 0 0 / 0.07)); }
+#memory-slot.echo { animation: echo 1.4s var(--ease) 0.3s; }
+@keyframes echo { 30% { filter: drop-shadow(0 0 0.15rem var(--memory-hl)) drop-shadow(0 0 1.2rem var(--memory-hl)); } }
 #memory-slot:empty::before {
   content: "No memory in play yet."; display: block; padding: 2.5rem 1rem; text-align: center;
   border: 1px dashed var(--line-strong); border-radius: 0.6rem; color: var(--muted);
@@ -213,7 +244,7 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
   --zig: 0.55rem;
   position: relative; margin: 0 0 0.5rem; padding: 0.9rem 1.2rem calc(0.8rem + var(--zig));
   background: var(--paper); border: 0 !important; border-radius: 0.2rem 0.2rem 0 0;
-  color: var(--ink); font: 0.9rem/1.45 var(--mono);
+  color: var(--ink); font: var(--fine)/1.45 var(--mono);
   /* zig-zag tear along the bottom edge */
   mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(2 * var(--zig)) 100%;
 }
@@ -222,41 +253,58 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 .receipt-head, #memory-slot .tb-chips {
   margin: 0 0 0.6rem; padding-bottom: 0.55rem; border-bottom: 1px dashed var(--line-strong);
 }
-.receipt-head { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; color: var(--muted); }
-.memory-fallback h3, #memory-slot .tb-title { margin: 0 0 0.5rem; font: 600 1.05rem/1.3 var(--mono); letter-spacing: -0.01em; }
+.receipt-head { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+/* The run's receipt keeps its top-right corner clear for the stamp, so the stamp never covers text. */
+.memory-fallback .receipt-head, #memory-slot > .tb-card .tb-chips { min-height: 2.4rem; padding-right: 9.5rem; }
+.memory-fallback h3, #memory-slot .tb-title { margin: 0 0 0.5rem; font: 600 max(1.05rem, 18px)/1.3 var(--mono); letter-spacing: -0.01em; }
 .receipt-items { list-style: none; margin: 0; padding: 0; }
 .receipt-items li { display: flex; align-items: baseline; gap: 0.5rem; margin: 0; padding: 0.1rem 0; list-style: none; }
-.receipt-items .k { min-width: 0; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+.receipt-items .k { min-width: 0; font-size: var(--fine); color: var(--muted); }
+.receipt-items .note { display: block; padding: 0 0 0.3rem; font: 400 var(--fine)/1.3 var(--pico-font-family-sans-serif); letter-spacing: -0.01em; color: var(--muted); }
 .receipt-items .dots { flex: 1 1 1rem; border-bottom: 2px dotted var(--line-strong); }
 .receipt-items .v { flex: none; font-weight: 600; }
 .receipt-items .ok, #memory-slot .tb-proof, #memory-slot .tb-ok .tb-icon { color: var(--ok); }
 .receipt-items .bad, #memory-slot .tb-line.tb-bad, #memory-slot .tb-bad .tb-icon { color: var(--bad); }
 #memory-slot .tb-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 #memory-slot .tb-chip {
-  padding: 0.05rem 0.55rem; border: 1px solid var(--line-strong); border-radius: 0.3rem;
-  background: none !important; color: var(--ink); font: 600 0.75rem/1.5 var(--mono); text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.05rem 0.45rem; border: 1px solid var(--line-strong); border-radius: 0.3rem;
+  background: none !important; color: var(--ink); font: 600 var(--fine)/1.5 var(--mono); text-transform: uppercase; letter-spacing: 0.04em;
 }
 #memory-slot .tb-owner { border-color: var(--ink); }
 #memory-slot .tb-warn { border-color: var(--warn); color: var(--warn); }
-#memory-slot .tb-line, #memory-slot .tb-cond { margin: 0.15rem 0; font-size: 0.9rem; }
-#memory-slot .tb-label { margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px dashed var(--line-strong); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-#memory-slot .tb-muted { font-size: 0.8rem; color: var(--muted); }
+#memory-slot .tb-line, #memory-slot .tb-cond { margin: 0.15rem 0; font-size: var(--fine); }
+#memory-slot .tb-label { margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px dashed var(--line-strong); font-size: var(--fine); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+#memory-slot .tb-muted { font-size: var(--fine); color: var(--muted); }
 #memory-slot .tb-bar { height: 6px; background: var(--line); }
 #memory-slot .tb-bar-fill { background: var(--ink) !important; }
 #memory-slot .tb-details { margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); }
 #memory-slot .tb-details summary { cursor: pointer; }
 #memory-slot .tb-forgotten { color: var(--muted); }
+/* Forget: memory.js's black bars redact the receipt line by line, the tombstone prints, then VOID lands. */
+#memory-slot .tb-forgotten :is(.tb-redacted, .tb-line, .tb-muted) { animation: redact 0.3s var(--ease) both; }
+#memory-slot .tb-redacted:nth-child(2) { animation-delay: 0.15s; }
+#memory-slot .tb-redacted:nth-child(3) { animation-delay: 0.3s; }
+#memory-slot .tb-redacted:nth-child(4) { animation-delay: 0.45s; }
+#memory-slot .tb-forgotten > :is(.tb-line, .tb-muted) { animation-delay: 0.6s; }
+#memory-slot .tb-redactions { padding-right: 6rem; } /* room for VOID */
+@keyframes redact { from { clip-path: inset(0 100% 0 0); } }
+/* At rest, the team's list shows its newest receipt on a small pile instead of a scrolling stack. */
+#memory-slot .tb-list > .tb-card ~ .tb-card { display: none; }
+#memory-slot .tb-list:has(> .tb-card ~ .tb-card) { position: relative; padding-bottom: 0.5rem; }
+#memory-slot .tb-list:has(> .tb-card ~ .tb-card)::before {
+  content: ""; position: absolute; inset: 0.5rem 0.6rem 0; z-index: -1; background: var(--line); border-radius: 0.2rem;
+}
 #memory-slot :is(.tb-forgotten, .tb-expired) { filter: grayscale(1); opacity: 0.7; }
 /* Refused or not applied: the receipt fades to grey under its stamp. */
 #memory-slot:is([data-stamp="not-applied"], [data-stamp="refused"]) > :not(.stamp) { filter: grayscale(1); opacity: 0.6; transition: filter 0.3s, opacity 0.3s; }
 
 /* Rubber stamps. Only stamps overshoot: they land from 1.6x. */
-/* Top-right corner: it covers only the receipt's decorative header, never a line a judge must read. */
+/* Top-right corner, which the receipt keeps clear (see .receipt-head), so a stamp never covers a line. */
 .stamp, #memory-slot .tb-forgotten::after {
   position: absolute; top: 0.4rem; right: 0.6rem; z-index: 2;
   padding: 0.1rem 0.8rem; border: 4px solid currentColor; border-radius: 0.45rem;
   color: var(--stamp, var(--void)); background: color-mix(in srgb, var(--paper) 40%, transparent);
-  font: 800 1.35rem/1.25 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+  font: 800 max(1rem, 18px)/1.25 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
   transform: rotate(-6deg); mix-blend-mode: multiply; pointer-events: none;
   animation: stamp 0.18s cubic-bezier(0.3, 1.4, 0.6, 1) both;
 }
@@ -264,8 +312,28 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 .stamp.refused { --stamp: var(--bad); }
 .stamp.not-applied { --stamp: var(--warn); }
 .stamp.still { animation: none; }
-#memory-slot .tb-forgotten::after { content: "Void"; }
+#memory-slot .tb-forgotten::after { content: "Void"; animation-delay: 0.9s; }
 @keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(1.6); } }
+
+/* memory.js's refusal receipt (key R) carries its own stamp: keep its first line clear of it. Its admin drawer reads at 18px+. */
+#memory-slot .tb-refused > .tb-label:first-child { min-height: 2.4rem; padding-right: 9.5rem; }
+#memory-slot :is(.tb-admin .tb-btn, .tb-admin .tb-reason, .tb-history) { font-size: var(--fine); }
+
+/* ------------------------------------------------------------------ fence (key F): memory.js's .tb-fence card
+   Two team panels with a striped wall between them; the blocked hit struck through; the filter printed as code. */
+
+#memory-slot .tb-fence-cols { position: relative; gap: 2rem; margin: 0.4rem 0 0.2rem; }
+#memory-slot .tb-fence-cols::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: calc(50% - 0.3rem); width: 0.6rem; border-radius: 0.3rem;
+  background: repeating-linear-gradient(-45deg, var(--ink) 0 0.35rem, var(--line-strong) 0.35rem 0.7rem);
+  transform-origin: top; animation: grow 0.4s var(--ease) 0.3s both;
+}
+#memory-slot .tb-fence-col { padding: 0.5rem 0.7rem; border-top: 0.3rem solid var(--team); border-radius: 0.4rem; background: var(--team-bg); animation: rise 0.3s var(--ease) both; }
+#memory-slot .tb-fence-col:last-child { animation-delay: 0.6s; }
+#memory-slot .tb-fence-head { font: 700 1.35rem/1.2 var(--pico-font-family-sans-serif); letter-spacing: -0.03em; }
+#memory-slot .tb-struck s { text-decoration-color: var(--bad); text-decoration-thickness: 0.12em; }
+#memory-slot .tb-fence .tb-cond ~ .tb-cond { display: none; } /* one line per list: the heading carries the count */
+#memory-slot .tb-filter { margin-top: 0.3rem; padding: 0.4rem 0.8rem; border-radius: 0.4rem; background: var(--code-bg); color: #e6e6e6; font-size: var(--fine); }
 
 /* ------------------------------------------------------------------ compare overlay (key c, Esc closes) */
 
@@ -276,24 +344,24 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 #compare header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 #compare h2 { margin: 0; font-size: 1.6rem; font-weight: 650; letter-spacing: -0.03em; }
 #compare .close, #keys button {
-  display: inline-flex; align-items: center; gap: 0.45rem; width: auto; margin: 0;
-  padding: 0.2rem 0.6rem 0.2rem 0.3rem; border: 1px solid transparent; border-radius: 0.55rem;
+  display: inline-flex; align-items: center; gap: 0.3em; width: auto; margin: 0;
+  padding: 0.15em 0.45em 0.15em 0.15em; border: 1px solid transparent; border-radius: 0.6em;
   background: transparent; box-shadow: none; color: var(--muted);
-  font-size: 0.75rem; font-weight: 500; line-height: 1.2; cursor: pointer;
+  font-size: inherit; font-weight: 500; line-height: 1.2; cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
-#compare .close { border-color: var(--line-strong); font-size: 0.9rem; }
+#compare .close { border-color: var(--line-strong); font-size: var(--fine); }
 #compare .empty { margin: auto; font-size: 1.2rem; color: var(--muted); }
 #compare .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
 .compare-col { margin: 0; padding: 1rem 1.5rem; background: var(--paper); border: 1px solid var(--line); border-radius: 0.8rem; box-shadow: none; }
 .compare-col.with { border-color: var(--team); box-shadow: 0 0 0 4px var(--team-bg); }
-.compare-col .numeral { font-size: 3.6rem; font-weight: 700; line-height: 1; letter-spacing: -0.05em; }
-.compare-col.with .numeral { color: var(--team); }
-.compare-col .numeral-label { margin: 0.2rem 0 0.6rem; font-size: 0.9rem; color: var(--muted); }
+.compare-col .numeral { display: flex; align-items: baseline; gap: 0.7rem; margin: 0.2rem 0 0.5rem; font-size: 1.1rem; font-weight: 550; color: var(--muted); }
+.compare-col .numeral strong { font-size: 5.5rem; font-weight: 700; line-height: 1; letter-spacing: -0.05em; color: var(--warn); animation: stamp 0.25s var(--ease) 0.2s both; }
+.compare-col.with .numeral strong { color: var(--team); }
 .compare-col h3 { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1.3rem; font-weight: 650; }
-.compare-col pre.patch { font-size: 0.85rem; }
-.compare-col pre.patch .line.from-memory { font-size: 0.95rem; }
-.compare-col .failing code { padding: 0.15rem 0.5rem; background: var(--bad-bg); color: var(--bad); font-size: 0.9rem; font-weight: 600; }
+.compare-col pre.patch { font-size: var(--fine); }
+.compare-col pre.patch .line.from-memory { font-size: var(--fine); }
+.compare-col .failing code { padding: 0.15rem 0.5rem; background: var(--bad-bg); color: var(--bad); font-size: var(--fine); font-weight: 600; }
 .compare-col .attempts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 0; font-size: 1.1rem; font-weight: 650; }
 .compare-col .attempts .ok { color: var(--ok); }
 .compare-col .attempts .bad { color: var(--bad); }
@@ -301,24 +369,25 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 
 /* ------------------------------------------------------------------ bottom bar: status + key chips */
 
+/* Sized by the window's width, not by fit's root size (em inside), so the ten chips keep to one row from 1280px up. */
 .bottombar {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.5rem;
-  padding: 0.2rem var(--gutter); border-top: 1px solid var(--line); background: var(--paper);
+  display: flex; align-items: center; gap: 0.25em 0.75em;
+  padding: 0.2em var(--gutter); border-top: 1px solid var(--line); background: var(--paper);
+  font-size: clamp(18px, 1.4vw, 0.9rem);
 }
-#status { flex: 1; min-width: 12rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 0.7rem/1.4 var(--mono); color: var(--muted); }
-#keys { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem; }
+#status { flex: 1 1 8em; min-width: 0; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+#keys { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0; }
 #keys button:hover, #compare .close:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
-#keys button.current, #keys button[aria-pressed="true"] { background: var(--team-bg); color: var(--team); }
+#keys button.current, #keys button[aria-pressed="true"] { background: var(--team-bg); color: var(--team); font-weight: 650; }
 #keys button.pressed { animation: press 0.2s var(--ease); }
 #keys kbd, #compare .close kbd {
-  display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.35rem;
-  border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 0.35rem;
-  background: var(--paper); color: var(--ink); font: 600 0.7rem/1 var(--mono);
+  display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; padding: 0 0.25em;
+  border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 0.4em;
+  background: var(--paper); color: var(--ink); font: 600 1em/1 var(--mono);
 }
-#keys button.current kbd, #keys button[aria-pressed="true"] kbd { border-color: var(--team); color: var(--team); }
-#keys .sep { width: 1px; height: 1.2rem; margin: 0 0.4rem; background: var(--line-strong); }
+#keys button.current kbd, #keys button[aria-pressed="true"] kbd { border-color: var(--team); background: var(--team); color: #fff; }
+#keys .sep { width: 1px; height: 1.3em; margin: 0 0.3em; background: var(--line-strong); }
 @keyframes press { 50% { transform: scale(0.92); } }
-#voice-panel { position: fixed; right: 1.25rem; bottom: 3.5rem; z-index: 11; }
 
 /* ------------------------------------------------------------------ narrow screens (about 800px): one column, page scrolls */
 
@@ -326,7 +395,7 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
   body { height: auto; min-height: 100dvh; }
   main.layout { grid-template-columns: minmax(0, 1fr); }
   main.layout > article { overflow: visible; }
-  .bottombar { position: sticky; bottom: 0; z-index: 5; }
+  .bottombar { position: sticky; bottom: 0; z-index: 5; flex-wrap: wrap; }
   #status { flex-basis: 100%; }
   #compare .columns { grid-template-columns: minmax(0, 1fr); }
 }
@@ -340,3 +409,6 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Compare: a failing test's name stays on one line (no mid-word break). */
+#compare .failing code { white-space: nowrap; font-size: 0.8em; }
