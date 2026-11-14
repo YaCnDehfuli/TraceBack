@@ -1,0 +1,28 @@
+{
+  "caseId": "A",
+  "title": "Duplicate webhook crashes payments",
+  "teamId": "team-payments",
+  "repositoryId": "payments-webhooks",
+  "fixturePath": "fixture_app/payments-webhooks",
+  "request": {
+    "method": "POST",
+    "path": "/webhooks/provider",
+    "report": "Provider notifications are failing with HTTP 500. The provider dashboard shows the same event delivered twice.",
+    "deliveries": [
+      {"id": "evt_1001", "customer_id": "cus_42", "amount": 2500},
+      {"id": "evt_1001", "customer_id": "cus_42", "amount": 2500}
+    ]
+  },
+  "logs": "2026-11-14T03:02:11Z INFO  POST /webhooks/provider event=evt_1001 status=200 duration_ms=10412\n2026-11-14T03:02:21Z INFO  POST /webhooks/provider event=evt_1001 (provider retry 1)\n2026-11-14T03:02:21Z ERROR Exception in ASGI application\nTraceback (most recent call last):\n  File \"app/webhooks.py\", line 20, in receive\n    get_db().payments.insert_one(\npymongo.errors.DuplicateKeyError: E11000 duplicate key error collection: fixture_payments.payments index: provider_event_id_1 dup key: { provider_event_id: \"evt_1001\" }\n2026-11-14T03:02:21Z INFO  POST /webhooks/provider event=evt_1001 status=500",
+  "patchableFiles": ["app/webhooks.py"],
+  "reproductionTest": "test_duplicate_event_reproduces",
+  "testIds": [
+    "test_single_payment_credited",
+    "test_duplicate_event_reproduces",
+    "test_duplicate_event_single_effect",
+    "test_distinct_events_same_customer",
+    "test_unique_index_still_present",
+    "test_replay_recorded_for_reconciliation"
+  ],
+  "revision": null
+}
