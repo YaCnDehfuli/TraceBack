@@ -1,0 +1,43 @@
+[project]
+name = "traceback-agent"
+version = "0.1.0"
+description = "Traceback: a debugging agent with verified, team-scoped, expiring and forgettable incident memory on MongoDB Atlas"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "pymongo>=4.10",
+    "python-dotenv>=1.0",
+    "httpx>=0.27",
+    "anthropic>=0.40",
+    "openai>=1.50",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.uv]
+# This is an application, not a library: uv installs dependencies only.
+package = false
+
+[tool.pytest.ini_options]
+# Only our own tests. fixture_app/ is deliberately buggy and trusted_tests/ runs inside the runner's sandbox.
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "atlas: needs a live MongoDB Atlas connection (skipped in CI; run locally with `make test-all`)",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["fixture_app", "trusted_tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

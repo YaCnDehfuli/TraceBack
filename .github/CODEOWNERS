@@ -1,0 +1,24 @@
+# One path per line. The LAST matching line wins, so /web/memory.js and /web/voice.js stay after /web/.
+# TODO: replace @elhamrazi and @sepehrash with P2's and P3's GitHub usernames.
+# Without branch protection this only requests reviewers; it does not block merges.
+
+/contracts/                @YaCnDehfuli @elhamrazi @sepehrash
+/core/                     @YaCnDehfuli
+/api/                      @YaCnDehfuli
+/agent/                    @YaCnDehfuli
+/evals/                    @YaCnDehfuli
+/tests/agent/              @YaCnDehfuli
+/memory/                   @elhamrazi
+/scripts/atlas_setup.py    @elhamrazi
+/scripts/seed_demo.py      @elhamrazi
+/tests/memory/             @elhamrazi
+/fixture_app/              @sepehrash
+/trusted_tests/            @sepehrash
+/runner/                   @sepehrash
+/cases/                    @sepehrash
+/web/                      @sepehrash
+/scripts/demo.py           @sepehrash
+/scripts/demo_reset.py     @sepehrash
+/tests/runner/             @sepehrash
+/web/memory.js             @elhamrazi
+/web/voice.js              @YaCnDehfuli

@@ -1,0 +1,28 @@
+# --- Secrets: never commit. This repository is PUBLIC. ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# --- Editors / OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- Runtime outputs ---
+evals/results/*
+!evals/results/.gitkeep
+.runs/
+tmp/

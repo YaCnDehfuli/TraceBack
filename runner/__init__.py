@@ -1,5 +1,1 @@
-"""Safe test runner (P3). See runner/core.py."""
-
-from .core import load_case, reproduce, verify
-
-__all__ = ["load_case", "reproduce", "verify"]
+"""The verification sandbox (owner: P3). The real Runner is runner.sandbox.LocalRunner."""

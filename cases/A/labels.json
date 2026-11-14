@@ -1,12 +1,10 @@
 {
-  "case_id": "A",
-  "_note": "Hidden answers, used only for scoring. Never shown to the agent.",
-  "cause": "A provider retry re-delivers an already-processed event; the handler inserts it again and the unique index on provider_event_id raises E11000.",
-  "conditions": {
-    "dup_key_field": "provider_event_id",
-    "same_event_id_on_both_deliveries": true
-  },
-  "expected_fix": "Treat a duplicate provider_event_id as already processed: keep the unique index, do not credit again, call ledger.mark_replayed(event.id), return 200.",
-  "memory_should_apply": true,
-  "reference_fix": "cases/A/reference/webhooks.py"
+  "caseId": "A",
+  "expectedCause": "A provider retry re-delivers an already-processed event; the handler inserts it again and the unique index on provider_event_id raises E11000.",
+  "memoryShouldApply": true,
+  "expectedOutcome": "verified",
+  "conditions": {"dupKeyField": "provider_event_id", "sameEventIdOnBothDeliveries": true},
+  "expectedFix": "Treat a duplicate provider_event_id as already processed: keep the unique index, don't credit again, call ledger.mark_replayed(event.id), return 200.",
+  "referenceFix": "cases/A/reference/webhooks.py",
+  "notes": "Hidden from the agent. Read only by evals/run_ablation.py."
 }

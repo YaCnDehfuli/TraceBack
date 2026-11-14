@@ -1,0 +1,7 @@
+{
+  "caseId": "X",
+  "expectedCause": "Replay path performs a second insert for an already-processed provider event.",
+  "memoryShouldApply": true,
+  "expectedOutcome": "verified",
+  "notes": "Hidden from the agent. Read only by evals/run_ablation.py."
+}

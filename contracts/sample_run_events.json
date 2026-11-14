@@ -1,0 +1,228 @@
+[
+  {
+    "runId": "run_sample_b",
+    "seq": 1,
+    "type": "run_started",
+    "payload": {
+      "incidentId": "inc_sample_b",
+      "caseId": "B",
+      "teamId": "team-payments",
+      "memoryMode": "real"
+    },
+    "at": "2026-11-14T15:00:03Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 2,
+    "type": "observation",
+    "payload": {
+      "observations": {
+        "incidentId": "inc_sample_b",
+        "repositoryId": "payments-webhooks",
+        "summary": "Second delivery of a provider webhook fails with E11000 on provider_event_id in handle_provider_event.",
+        "errorCode": "11000",
+        "operation": "webhook.insert",
+        "exceptionType": "DuplicateKeyError",
+        "dupKeyIndex": "provider_event_id_1",
+        "dupKeyField": "provider_event_id",
+        "dupKeyValue": "evt_7Q2",
+        "deliveryEventIds": [
+          "evt_7Q2",
+          "evt_7Q2"
+        ],
+        "stackFrames": [
+          "app/webhooks.py:handle_provider_event"
+        ],
+        "versions": {}
+      }
+    },
+    "at": "2026-11-14T15:00:06Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 3,
+    "type": "recall",
+    "payload": {
+      "count": 1,
+      "memories": [
+        {
+          "memoryId": "mem_webhook_replay",
+          "version": 1,
+          "ownerTeamId": "team-payments",
+          "match": "strong"
+        }
+      ]
+    },
+    "at": "2026-11-14T15:00:09Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 4,
+    "type": "precondition_check",
+    "payload": {
+      "memory": {
+        "memoryId": "mem_webhook_replay",
+        "version": 1,
+        "ownerTeamId": "team-payments",
+        "match": "strong"
+      },
+      "held": 2,
+      "total": 2,
+      "results": [
+        {
+          "check": "dup_key_field",
+          "expected": "provider_event_id",
+          "actual": "provider_event_id",
+          "held": true
+        },
+        {
+          "check": "same_event_id_on_both_deliveries",
+          "expected": "true",
+          "actual": "true",
+          "held": true
+        }
+      ],
+      "notAppliedReason": null
+    },
+    "at": "2026-11-14T15:00:12Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 5,
+    "type": "tool_call",
+    "payload": {
+      "tool": "read_file",
+      "args": {
+        "path": "app/webhooks.py"
+      }
+    },
+    "at": "2026-11-14T15:00:15Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 6,
+    "type": "tool_result",
+    "payload": {
+      "tool": "read_file",
+      "evidenceId": "ev_1",
+      "summary": "handle_provider_event inserts without handling duplicates"
+    },
+    "at": "2026-11-14T15:00:18Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 7,
+    "type": "patch_proposed",
+    "payload": {
+      "attempt": 1,
+      "patch": {
+        "path": "app/webhooks.py",
+        "newContent": "from pymongo.errors import DuplicateKeyError\n\n\ndef handle_provider_event(event, db, ledger):\n    try:\n        db.payments.insert_one(\n            {\"provider_event_id\": event.id, \"customer_id\": event.customer_id, \"amount\": event.amount}\n        )\n    except DuplicateKeyError:\n        ledger.mark_replayed(event.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(event.customer_id, event.amount)\n    return {\"ok\": True}\n"
+      },
+      "fromMemory": {
+        "memoryId": "mem_webhook_replay",
+        "version": 1,
+        "ownerTeamId": "team-payments",
+        "match": "strong"
+      },
+      "fromMemoryLines": [
+        10
+      ]
+    },
+    "at": "2026-11-14T15:00:21Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 8,
+    "type": "verification",
+    "payload": {
+      "attempt": 1,
+      "result": {
+        "runId": "verify_sample_b",
+        "caseId": "B",
+        "status": "passed",
+        "beforeFailed": true,
+        "afterPassed": true,
+        "tests": [
+          {
+            "name": "test_duplicate_event_reproduces",
+            "passed": true,
+            "detail": null
+          },
+          {
+            "name": "test_duplicate_event_single_effect",
+            "passed": true,
+            "detail": null
+          },
+          {
+            "name": "test_replay_recorded_for_reconciliation",
+            "passed": true,
+            "detail": null
+          },
+          {
+            "name": "test_distinct_events_same_customer",
+            "passed": true,
+            "detail": null
+          },
+          {
+            "name": "test_unique_index_still_present",
+            "passed": true,
+            "detail": null
+          },
+          {
+            "name": "test_single_payment_regression",
+            "passed": true,
+            "detail": null
+          },
+          {
+            "name": "test_invalid_payload_rejected",
+            "passed": true,
+            "detail": null
+          }
+        ],
+        "evidenceHashes": [
+          "sha256:sample"
+        ],
+        "durationMs": 4180,
+        "detail": null
+      }
+    },
+    "at": "2026-11-14T15:00:24Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 9,
+    "type": "memory_outcome",
+    "payload": {
+      "outcome": "renewed",
+      "memory": {
+        "memoryId": "mem_webhook_replay",
+        "version": 1,
+        "ownerTeamId": "team-payments",
+        "match": "strong"
+      },
+      "message": "Memory renewed: proven again, expiry extended."
+    },
+    "at": "2026-11-14T15:00:27Z"
+  },
+  {
+    "runId": "run_sample_b",
+    "seq": 10,
+    "type": "run_finished",
+    "payload": {
+      "outcome": "verified",
+      "attempt": 1,
+      "seenBefore": true,
+      "testsPassed": 7,
+      "testsTotal": 7,
+      "memoryUsed": {
+        "memoryId": "mem_webhook_replay",
+        "version": 1,
+        "ownerTeamId": "team-payments",
+        "match": "strong"
+      },
+      "summary": "Seen before. Fix verified on the first attempt, 7 tests pass. One memory used, owned by Payments."
+    },
+    "at": "2026-11-14T15:00:30Z"
+  }
+]

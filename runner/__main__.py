@@ -1,31 +1,30 @@
 """Command line for the runner.
 
-    python -m runner reproduce A
-    python -m runner verify A cases/A/reference/webhooks.py
+    uv run python -m runner reproduce A
+    uv run python -m runner verify A cases/A/reference/webhooks.py
 """
 
-import json
 import sys
 from pathlib import Path
 
-from .core import load_case, reproduce, verify
+from contracts.models import FilePatch
+
+from .sandbox import LocalRunner, load_manifest
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) < 2 or argv[0] not in ("reproduce", "verify"):
+    if len(argv) < 2 or argv[0] not in ("reproduce", "verify") or (argv[0] == "verify" and len(argv) < 3):
         print(__doc__)
         return 2
     command, case_id = argv[0], argv[1]
+    runner = LocalRunner()
     if command == "reproduce":
-        result = reproduce(case_id)
+        result = runner.reproduce(case_id)
     else:
-        if len(argv) < 3:
-            print(__doc__)
-            return 2
-        target = load_case(case_id)["allowed_files"][0]
+        target = load_manifest(case_id).patchable_files[0]
         content = Path(argv[2]).read_text(encoding="utf-8")
-        result = verify(case_id, {"path": target, "content": content})
-    print(json.dumps(result, indent=2))
+        result = runner.verify(case_id, FilePatch(path=target, new_content=content))
+    print(result.model_dump_json(by_alias=True, indent=2))
     return 0
 
 
