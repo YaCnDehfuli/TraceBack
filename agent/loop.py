@@ -219,6 +219,9 @@ def run_investigation(
             tests_total=tests_total,
             memory_used=memory_used,
             summary=summary,
+            escalation=None
+            if outcome == "verified"
+            else _escalation(case, obs, team, run_id, attempt, final, last_fix, rejected_reasons, used, budget),
         ),
     )
     return RunView(
@@ -258,6 +261,9 @@ def _recall_and_check(
         placebo = _load_placebo(obs)
         if placebo is None:
             sink.emit("error", ErrorPayload(message=f"placebo mode: {PLACEBO_FILE.name} missing; running without"))
+            return None, [], []
+        # Named in the event stream (UI + experiment scoring); never recorded or renewed as a real memory.
+        sink.emit("recall", RecallPayload(count=1, memories=[placebo.ref()]))
         return placebo, [], []
 
     try:
@@ -297,7 +303,7 @@ def _recall_and_check(
                 run_id,
                 MemoryUseDecision(decision="rejected", preconditions=results, reason=reason),
                 sink,
-                MemoryOutcomePayload(outcome="near_miss", memory=c.ref(), message=f"Memory not applied. {reason}"),
+                reason=reason,
             )
     return used, influence, reasons
 
@@ -309,32 +315,33 @@ def _report_use(principal, memory, used, influence, run_id, final, sink) -> None
     decision = MemoryUseDecision(
         decision="used", preconditions=conditions, reason="conditions held", verification=final
     )
-    if final and final.verified:
-        payload = MemoryOutcomePayload(
-            outcome="renewed", memory=used.ref(), message="Memory proven again; its expiry was extended."
-        )
-    elif final and final.status == "failed":
-        payload = MemoryOutcomePayload(
-            outcome="disputed",
-            memory=used.ref(),
-            message="Memory disputed: its conditions held but the fix failed. Paused for review.",
-        )
-    else:
-        payload = None
-    _safe_record_use(principal, memory, used, run_id, decision, sink, payload)
+    _safe_record_use(principal, memory, used, run_id, decision, sink)
 
 
-def _safe_record_use(principal, memory, cand, run_id, decision, sink, payload) -> None:
+OUTCOME_MESSAGES = {
+    "renewed": "Memory proven again; its expiry was extended (up to its maximum lifetime).",
+    "disputed": "Memory disputed: its conditions held but the fix failed. Paused for review.",
+}
+
+
+def _safe_record_use(principal, memory, cand, run_id, decision, sink, reason: str | None = None) -> None:
+    """The receipt reports what the STORE did (renewed / near_miss / disputed), never what we expected.
+    None means nothing changed (no verification, inconclusive, renewal off, or an admin acted mid-run)."""
     try:
-        memory.record_use(principal, cand.memory_id, cand.version, run_id, decision)
+        outcome = memory.record_use(principal, cand.memory_id, cand.version, run_id, decision)
     except NotImplementedError:
         sink.emit("error", ErrorPayload(message="Memory use not recorded yet (record_use is P2-6)."))
         return
     except Exception as e:  # noqa: BLE001
         sink.emit("error", ErrorPayload(message=f"record_use failed: {type(e).__name__}: {str(e)[:160]}"))
         return
-    if payload:
-        sink.emit("memory_outcome", payload)
+    if outcome is None:
+        return
+    if outcome == "near_miss":
+        message = f"Memory not applied. {reason}" if reason else "Memory not applied."
+    else:
+        message = OUTCOME_MESSAGES.get(outcome, f"Memory {outcome}.")
+    sink.emit("memory_outcome", MemoryOutcomePayload(outcome=outcome, memory=cand.ref(), message=message))
 
 
 def _promote(principal, memory, obs, last_fix, final, revision, sink) -> None:
@@ -395,12 +402,48 @@ def _memory_block(used: MemoryCandidate | None) -> str:
         f"Confirmed cause: {used.confirmed_cause}",
         f"Proven resolution: {used.resolution_summary}",
     ]
+    if used.applicability.excludes:
+        block.append("It does NOT apply to: " + "; ".join(used.applicability.excludes))
     if used.resolution_patch:
         block.append(
             f"The proven fix, written for an earlier version of {used.resolution_patch.path}. "
             f"Adapt names to the current code:\n```python\n{used.resolution_patch.new_content}\n```"
         )
     return "\n".join(block)
+
+
+def _escalation(case, obs, team, run_id, attempt, final, last_fix, rejected_reasons, used, budget) -> str:
+    """A handoff a human can paste into a ticket or chat: what we saw, what memory said, what we tried."""
+    u = budget.usage()
+    lines = [
+        f"Traceback escalation for {team}: case {case.case_id}",
+        f"Incident {obs.incident_id} · repo {obs.repository_id} · run {run_id}",
+        f"Symptom: {obs.summary or 'n/a'}",
+    ]
+    if rejected_reasons:
+        lines.append(f"Memory: a similar memory was NOT applied. {rejected_reasons[0]}")
+    elif used is not None:
+        lines.append(f"Memory: {used.memory_id} v{used.version} was applied; its fix did not verify here.")
+    else:
+        lines.append("Memory: none applied (new incident for this team).")
+    if last_fix:
+        fix, cause, summary = last_fix
+        lines.append(f"Last proposed fix: {fix.path}. Suspected cause: {cause or 'n/a'}. {summary}".rstrip())
+    if final is None:
+        lines.append(f"Verification: no fix was verified within the budget ({attempt} attempt(s)).")
+    elif final.status == "inconclusive":
+        lines.append(f"Verification: could not run (test infrastructure). {final.detail or ''}".rstrip())
+    else:
+        failed = [t for t in final.tests if not t.passed]
+        passed = f"{final.tests_passed}/{len(final.tests)}"
+        lines.append(f"Verification: {passed} trusted tests pass after {attempt} attempt(s).")
+        lines += [f"  - {t.name}: {(t.detail or 'failed')[:200]}" for t in failed[:5]]
+    lines.append(
+        f"Budget used: {u.tool_calls}/{u.max_tool_calls} tool calls, "
+        f"{u.patch_attempts}/{u.max_patch_attempts} fix attempts, {u.elapsed_ms // 1000}s."
+    )
+    lines.append("Nothing was promoted to team memory from this run.")
+    return "\n".join(lines)
 
 
 def _reason_core(reason: str) -> str:
