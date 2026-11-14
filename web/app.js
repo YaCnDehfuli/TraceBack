@@ -29,6 +29,7 @@
   let currentKey = DEMO_KEYS[0].key;
   let followToken = 0; // cancels an older run being followed when a new one starts
   let lastRunByCase = {};
+  const runs = {}; // runId -> { caseId, events: [] }, kept for the compare view
   let state = freshState();
 
   function freshState() {
@@ -266,9 +267,15 @@
 
   const FINAL = new Set(["run_finished", "error"]);
 
+  function remember(runId, caseId, event) {
+    if (!runs[runId]) runs[runId] = { caseId, events: [] };
+    if (!runs[runId].events.some((e) => e.seq === event.seq)) runs[runId].events.push(event);
+  }
+
   async function followRun(runId, caseId) {
     const token = ++followToken;
     resetView(caseId);
+    hideCompare();
     let after = 0;
     setStatus(`Following run ${runId}`);
     while (token === followToken) {
@@ -280,6 +287,7 @@
       }
       for (const event of events) {
         if (token !== followToken) return;
+        remember(runId, caseId, event);
         renderEvent(event);
         after = Math.max(after, event.seq);
         if (FINAL.has(event.type)) {
@@ -304,10 +312,76 @@
     }
     for (const event of events) {
       if (token !== followToken) return;
+      remember(event.runId, "B", event);
       renderEvent(event);
       await new Promise((r) => setTimeout(r, SAMPLE_STEP_MS));
     }
     setStatus("Sample replay finished");
+  }
+
+  // ------------------------------------------------------------------ compare view (P3-8)
+  // Two finished runs of the same case side by side: the latest one that used a memory and the
+  // latest one that didn't (for example, the rerun after Forget). Facts only, taken from events.
+
+  function summarize(events) {
+    const out = { seenBefore: false, outcome: null, summary: "", attempts: [], memoryLines: [], steps: events.length };
+    for (const e of events) {
+      const p = e.payload || {};
+      if (e.type === "patch_proposed") {
+        const lines = ((p.patch && p.patch.newContent) || "").split("\n");
+        out.memoryLines.push(...(p.fromMemoryLines || []).map((n) => lines[n - 1]).filter(Boolean));
+      } else if (e.type === "verification") {
+        const tests = (p.result && p.result.tests) || [];
+        out.attempts.push({
+          attempt: p.attempt,
+          passed: tests.filter((t) => t.passed).length,
+          total: tests.length,
+          failing: tests.filter((t) => !t.passed).map((t) => t.name),
+        });
+      } else if (e.type === "run_finished") {
+        out.seenBefore = !!p.seenBefore;
+        out.outcome = p.outcome;
+        out.summary = p.summary || "";
+      }
+    }
+    return out;
+  }
+
+  function compareColumn(heading, s) {
+    const finalAttempt = s.attempts[s.attempts.length - 1];
+    const tone = s.outcome === "verified" ? (s.attempts.length > 1 ? "warn" : "ok") : "bad";
+    return el("div", { class: "compare-col" },
+      el("h3", {}, heading),
+      el("ol", {}, ...s.attempts.map((a) => el("li", { class: a.failing.length ? "bad" : "ok" },
+        `Attempt ${a.attempt}: tests ${a.passed}/${a.total}`,
+        a.failing.length ? el("span", { class: "sub" }, `Failed: ${a.failing.join(", ")}`) : null))),
+      s.memoryLines.length
+        ? el("pre", { class: "patch" }, ...s.memoryLines.map((t) => el("span", { class: "line from-memory" }, t, el("span", { class: "tag" }, "from memory"))))
+        : null,
+      el("div", { class: `badge ${tone}` }, finalAttempt ? `${s.outcome} on attempt ${finalAttempt.attempt}` : s.outcome || "no result"),
+      el("p", { class: "sub" }, `${s.steps} steps · ${s.summary}`));
+  }
+
+  function showCompare(caseId) {
+    const finished = Object.values(runs)
+      .filter((r) => r.caseId === caseId && r.events.some((e) => e.type === "run_finished"))
+      .map((r) => summarize(r.events));
+    const withMemory = finished.filter((s) => s.seenBefore).pop();
+    const withoutMemory = finished.filter((s) => !s.seenBefore).pop();
+    const box = $("compare");
+    box.innerHTML = "";
+    if (!withMemory || !withoutMemory) {
+      box.appendChild(el("p", { class: "sub" }, `Compare needs two finished runs of case ${caseId}: one with memory and one without (rerun it after Forget).`));
+    } else {
+      box.appendChild(compareColumn("With memory", withMemory));
+      box.appendChild(compareColumn("Without memory", withoutMemory));
+    }
+    box.hidden = false;
+    box.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function hideCompare() {
+    $("compare").hidden = true;
   }
 
   async function startCase(caseId) {
@@ -342,6 +416,7 @@
     "4": () => startCase("D"), // Fence: switches to the Platform engineer
     "5": () => { applyIdentity("key-payments-admin"); $("memory-panel").scrollIntoView({ behavior: "smooth" }); }, // Forget
     "0": () => replaySample(),
+    c: () => ($("compare").hidden ? showCompare("B") : hideCompare()), // compare with vs without memory
   };
 
   document.addEventListener("keydown", (e) => {
@@ -362,6 +437,7 @@
     currentKey: () => currentKey,
     showRun: (runId, caseId) => followRun(runId, caseId),
     startCase,
+    showCompare,
     renderMemoryCard: (memory, context) => fallbackCard(memory), // replaced by web/memory.js (P2-4)
   };
 

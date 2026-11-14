@@ -56,6 +56,11 @@
     #outcome.warn { display: block; background: var(--warn-bg); color: var(--warn); }
     #outcome.bad { display: block; background: var(--bad-bg); color: var(--bad); }
 
+    #compare:not([hidden]) { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .compare-col ol { padding-left: 20px; font-size: 17px; }
+    .compare-col li.ok { color: var(--ok); } .compare-col li.bad { color: var(--bad); }
+    .badge { display: inline-block; padding: 6px 14px; border-radius: 999px; font-weight: 700; }
+    .badge.ok { background: var(--ok-bg); color: var(--ok); } .badge.warn { background: var(--warn-bg); color: var(--warn); } .badge.bad { background: var(--bad-bg); color: var(--bad); }
     #memory-slot:empty::before { content: "No memory in play yet."; color: var(--muted); }
     .memory-fallback { border: 2px solid var(--team); border-radius: 12px; padding: 14px; }
     .memory-fallback .owner { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--team-bg); color: var(--team); font-weight: 600; font-size: 13px; }
@@ -84,6 +89,7 @@
       <h2>Memory</h2>
       <div id="memory-slot"></div>
     </section>
+    <section class="panel" id="compare" aria-label="With memory vs without memory" hidden></section>
   </main>
   <div id="keys"><kbd>1</kbd> Earn · <kbd>2</kbd> Reuse · <kbd>3</kbd> Refuse · <kbd>4</kbd> Fence · <kbd>5</kbd> Forget · <kbd>0</kbd> sample</div>
   <p id="status">Starting…</p>
