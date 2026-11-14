@@ -1,0 +1,3584 @@
+{
+  "meta": {
+    "generatedAt": "2026-11-14T19:18:19+00:00",
+    "stamp": "1114191217",
+    "cases": [
+      "B",
+      "B2",
+      "B3"
+    ],
+    "arms": [
+      "off",
+      "placebo",
+      "real"
+    ],
+    "repeats": 1,
+    "target": "in-process TestClient(api.main.app)",
+    "isolation": "each run used its own throwaway Atlas database (`traceback_eval_<stamp>_<case>_<arm>_<n>`, set up with `scripts/atlas_setup.py`, run in its own process with `MONGODB_DB` set to it, dropped afterwards), so no run's memory renewals, disputes or promotions reached another run, and the demo and team databases were not touched.",
+    "revision": {
+      "git": "e0a6e18",
+      "fixtureTree": "ff40df4",
+      "trustedTestsTree": "e97bdd6",
+      "casesTree": "05a5e2f",
+      "uncommittedChanges": []
+    },
+    "modelOverride": null,
+    "plan": [
+      {
+        "case": "B",
+        "arm": "off",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b_off_1"
+      },
+      {
+        "case": "B",
+        "arm": "placebo",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b_placebo_1"
+      },
+      {
+        "case": "B",
+        "arm": "real",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b_real_1"
+      },
+      {
+        "case": "B2",
+        "arm": "off",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b2_off_1"
+      },
+      {
+        "case": "B2",
+        "arm": "placebo",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b2_placebo_1"
+      },
+      {
+        "case": "B2",
+        "arm": "real",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b2_real_1"
+      },
+      {
+        "case": "B3",
+        "arm": "off",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b3_off_1"
+      },
+      {
+        "case": "B3",
+        "arm": "placebo",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b3_placebo_1"
+      },
+      {
+        "case": "B3",
+        "arm": "real",
+        "repeat": 1,
+        "db": "traceback_eval_1114191217_b3_real_1"
+      }
+    ],
+    "fairness": {
+      "models": [
+        "claude-sonnet-5-5"
+      ],
+      "promptVersions": [
+        "system_v1"
+      ],
+      "budgets": [
+        {
+          "deadlineSeconds": 120,
+          "maxPatchAttempts": 2,
+          "maxToolCalls": 8
+        }
+      ],
+      "equal": true
+    }
+  },
+  "placebos": {
+    "ok": true,
+    "problems": [],
+    "items": [
+      {
+        "memoryId": "placebo_export_timeout",
+        "repositoryId": "billing-exports",
+        "lengths": {
+          "retrieval_text": 292,
+          "cause_and_resolution": 257,
+          "patch": 966,
+          "injected": 1223
+        },
+        "ratios": {
+          "retrieval_text": 0.986,
+          "cause_and_resolution": 1.049,
+          "patch": 1.098,
+          "injected": 1.087
+        }
+      },
+      {
+        "memoryId": "placebo_token_clock_skew",
+        "repositoryId": "auth-service",
+        "lengths": {
+          "retrieval_text": 292,
+          "cause_and_resolution": 263,
+          "patch": 972,
+          "injected": 1235
+        },
+        "ratios": {
+          "retrieval_text": 0.986,
+          "cause_and_resolution": 1.073,
+          "patch": 1.105,
+          "injected": 1.098
+        }
+      },
+      {
+        "memoryId": "placebo_search_unicode",
+        "repositoryId": "catalog-search",
+        "lengths": {
+          "retrieval_text": 295,
+          "cause_and_resolution": 258,
+          "patch": 915,
+          "injected": 1173
+        },
+        "ratios": {
+          "retrieval_text": 0.997,
+          "cause_and_resolution": 1.053,
+          "patch": 1.04,
+          "injected": 1.043
+        }
+      },
+      {
+        "memoryId": "placebo_thumbnail_memory",
+        "repositoryId": "media-uploads",
+        "lengths": {
+          "retrieval_text": 289,
+          "cause_and_resolution": 242,
+          "patch": 889,
+          "injected": 1131
+        },
+        "ratios": {
+          "retrieval_text": 0.976,
+          "cause_and_resolution": 0.988,
+          "patch": 1.01,
+          "injected": 1.005
+        }
+      }
+    ],
+    "reference": {
+      "retrieval_text": 296,
+      "cause_and_resolution": 245,
+      "patch": 880,
+      "injected": 1125
+    },
+    "tolerance": 0.15
+  },
+  "summary": {
+    "off": {
+      "runs": 3,
+      "valid": 3,
+      "invalid": 0,
+      "error": 0,
+      "verifiedOnAttempt1": 0,
+      "verified": 3,
+      "outcomeAsLabelled": 3,
+      "attempts": [
+        2,
+        2,
+        2
+      ],
+      "toolCalls": [
+        5,
+        5,
+        5
+      ],
+      "failingTestsLastAttempt": [
+        0,
+        0,
+        0
+      ],
+      "outcomes": {
+        "verified": 3
+      }
+    },
+    "placebo": {
+      "runs": 3,
+      "valid": 3,
+      "invalid": 0,
+      "error": 0,
+      "verifiedOnAttempt1": 0,
+      "verified": 3,
+      "outcomeAsLabelled": 3,
+      "attempts": [
+        2,
+        2,
+        2
+      ],
+      "toolCalls": [
+        5,
+        5,
+        5
+      ],
+      "failingTestsLastAttempt": [
+        0,
+        0,
+        0
+      ],
+      "outcomes": {
+        "verified": 3
+      }
+    },
+    "real": {
+      "runs": 3,
+      "valid": 3,
+      "invalid": 0,
+      "error": 0,
+      "verifiedOnAttempt1": 3,
+      "verified": 3,
+      "outcomeAsLabelled": 3,
+      "attempts": [
+        1,
+        1,
+        1
+      ],
+      "toolCalls": [
+        4,
+        4,
+        4
+      ],
+      "failingTestsLastAttempt": [
+        0,
+        0,
+        0
+      ],
+      "outcomes": {
+        "verified": 3
+      }
+    }
+  },
+  "scores": [
+    {
+      "case": "B",
+      "arm": "off",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b_off_1",
+      "runId": "run_5e952a61ff63",
+      "incidentId": "inc_f30fd6fbdb1b",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": false,
+      "verified": true,
+      "verifiedAttempt": 2,
+      "attempts": 2,
+      "toolCalls": 5,
+      "budgetToolCalls": 5,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [
+        "test_replay_recorded_for_reconciliation"
+      ],
+      "recallCount": null,
+      "memoryUsed": null,
+      "placeboMemoryId": null,
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B",
+      "arm": "placebo",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b_placebo_1",
+      "runId": "run_738a3ac834ed",
+      "incidentId": "inc_f8cef6bae1e7",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": false,
+      "verified": true,
+      "verifiedAttempt": 2,
+      "attempts": 2,
+      "toolCalls": 5,
+      "budgetToolCalls": 5,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [
+        "test_replay_recorded_for_reconciliation"
+      ],
+      "recallCount": null,
+      "memoryUsed": null,
+      "placeboMemoryId": "placebo_export_timeout",
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B",
+      "arm": "real",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b_real_1",
+      "runId": "run_07efeae9de13",
+      "incidentId": "inc_8616390aa708",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": true,
+      "verified": true,
+      "verifiedAttempt": 1,
+      "attempts": 1,
+      "toolCalls": 4,
+      "budgetToolCalls": 4,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [],
+      "recallCount": 1,
+      "memoryUsed": "mem_eb0628660ce9",
+      "placeboMemoryId": null,
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B2",
+      "arm": "off",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b2_off_1",
+      "runId": "run_8903823654f0",
+      "incidentId": "inc_367f39d46454",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": false,
+      "verified": true,
+      "verifiedAttempt": 2,
+      "attempts": 2,
+      "toolCalls": 5,
+      "budgetToolCalls": 5,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [
+        "test_replay_recorded_for_reconciliation"
+      ],
+      "recallCount": null,
+      "memoryUsed": null,
+      "placeboMemoryId": null,
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B2",
+      "arm": "placebo",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b2_placebo_1",
+      "runId": "run_3d4826dc92df",
+      "incidentId": "inc_cac1f310066c",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": false,
+      "verified": true,
+      "verifiedAttempt": 2,
+      "attempts": 2,
+      "toolCalls": 5,
+      "budgetToolCalls": 5,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [
+        "test_replay_recorded_for_reconciliation"
+      ],
+      "recallCount": null,
+      "memoryUsed": null,
+      "placeboMemoryId": "placebo_search_unicode",
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B2",
+      "arm": "real",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b2_real_1",
+      "runId": "run_8d554f8869da",
+      "incidentId": "inc_a89700a5620f",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": true,
+      "verified": true,
+      "verifiedAttempt": 1,
+      "attempts": 1,
+      "toolCalls": 4,
+      "budgetToolCalls": 4,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [],
+      "recallCount": 1,
+      "memoryUsed": "mem_328bb5d01a50",
+      "placeboMemoryId": null,
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B3",
+      "arm": "off",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b3_off_1",
+      "runId": "run_f13aae63bc72",
+      "incidentId": "inc_bdcdae60720a",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": false,
+      "verified": true,
+      "verifiedAttempt": 2,
+      "attempts": 2,
+      "toolCalls": 5,
+      "budgetToolCalls": 5,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [
+        "test_replay_recorded_for_reconciliation"
+      ],
+      "recallCount": null,
+      "memoryUsed": null,
+      "placeboMemoryId": null,
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B3",
+      "arm": "placebo",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b3_placebo_1",
+      "runId": "run_b6dee373b90f",
+      "incidentId": "inc_bb5b9b57b042",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": false,
+      "verified": true,
+      "verifiedAttempt": 2,
+      "attempts": 2,
+      "toolCalls": 5,
+      "budgetToolCalls": 5,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [
+        "test_replay_recorded_for_reconciliation"
+      ],
+      "recallCount": null,
+      "memoryUsed": null,
+      "placeboMemoryId": "placebo_thumbnail_memory",
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    },
+    {
+      "case": "B3",
+      "arm": "real",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b3_real_1",
+      "runId": "run_724e29fab5e1",
+      "incidentId": "inc_caa762c0fbb8",
+      "validity": "valid",
+      "reasons": [],
+      "outcome": "verified",
+      "expectedOutcome": "verified",
+      "outcomeAsLabelled": true,
+      "verifiedOnAttempt1": true,
+      "verified": true,
+      "verifiedAttempt": 1,
+      "attempts": 1,
+      "toolCalls": 4,
+      "budgetToolCalls": 4,
+      "failingTestsLastAttempt": 0,
+      "testsTotalLastAttempt": 6,
+      "failingTestNamesAttempt1": [],
+      "recallCount": 1,
+      "memoryUsed": "mem_5e9fb7d683fb",
+      "placeboMemoryId": null,
+      "errors": [],
+      "runFinishedMissing": false,
+      "model": "claude-sonnet-5-5",
+      "promptVersion": "system_v1",
+      "budget": {
+        "maxToolCalls": 8,
+        "maxPatchAttempts": 2,
+        "deadlineSeconds": 120
+      }
+    }
+  ],
+  "runs": [
+    {
+      "case": "B",
+      "arm": "off",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b_off_1",
+      "error": null,
+      "runId": "run_5e952a61ff63",
+      "incidentId": "inc_f30fd6fbdb1b",
+      "runView": {
+        "runId": "run_5e952a61ff63",
+        "incidentId": "inc_f30fd6fbdb1b",
+        "caseId": "B",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 2,
+        "seenBefore": false,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": null,
+        "memoryMode": "off",
+        "budget": {
+          "toolCalls": 5,
+          "patchAttempts": 2,
+          "elapsedMs": 22015,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_f30fd6fbdb1b",
+            "caseId": "B",
+            "teamId": "team-payments",
+            "memoryMode": "off"
+          },
+          "at": "2026-11-14T19:12:25.559000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_f30fd6fbdb1b",
+              "repositoryId": "payments-webhooks",
+              "summary": "Since the provider's timeout incident, our notification endpoint is throwing server errors and the provider keeps retrying. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:21 in handle_provider_event",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_2001",
+              "deliveryEventIds": [
+                "evt_2001",
+                "evt_2001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:21 in handle_provider_event"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:12:25.737000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 3,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:12:27.733000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 4,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_e6e5cd8f3f",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:12:27.831000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:12:27.919000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:12:28.010000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/ledger.py"
+            }
+          },
+          "at": "2026-11-14T19:12:29.489000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_9846638021",
+            "summary": "read app/ledger.py"
+          },
+          "at": "2026-11-14T19:12:29.606000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 9,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Inbound payment notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentNotification(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef handle_provider_event(notification: PaymentNotification) -> dict:\n    db = get_db()\n    payments = db.payments\n    try:\n        payments.insert_one(\n            {\n                \"provider_event_id\": notification.id,\n                \"customer_id\": notification.customer_id,\n                \"amount\": notification.amount,\n            }\n        )\n    except DuplicateKeyError:\n        # Redelivery of an already-recorded event. Only credit if a previous\n        # attempt recorded the payment but failed before crediting the ledger.\n        if db.ledger.find_one({\"event_id\": notification.id}) is None:\n            ledger.credit(notification.customer_id, notification.amount, notification.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(notification.customer_id, notification.amount, notification.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:12:34.861000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 10,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_672c42fb",
+              "caseId": "B",
+              "status": "failed",
+              "beforeFailed": true,
+              "afterPassed": false,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": false,
+                  "detail": "AssertionError: a replayed provider event must be recorded for month-end reconciliation\nassert 0 == 1"
+                }
+              ],
+              "evidenceHashes": [
+                "a2d6fd94e349ecfc5d8015cc2d3c0b6342c509e47158ede87af47f0005f199d8",
+                "d9879eaab5703ed9e7116e4079541a5767f35ee48db9e07d05ae7b457c8c2750",
+                "ebf9979264c0a4ca93a87bd443aebf6cbe4f93a6a4792df6c29b89093528d4a0"
+              ],
+              "durationMs": 3868,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:12:38.820000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 2,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Inbound payment notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentNotification(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef handle_provider_event(notification: PaymentNotification) -> dict:\n    db = get_db()\n    payments = db.payments\n    try:\n        payments.insert_one(\n            {\n                \"provider_event_id\": notification.id,\n                \"customer_id\": notification.customer_id,\n                \"amount\": notification.amount,\n            }\n        )\n    except DuplicateKeyError:\n        # Redelivery of an already-recorded event: record it for month-end\n        # reconciliation and acknowledge without crediting twice.\n        ledger.mark_replayed(notification.id)\n        if db.ledger.find_one({\"event_id\": notification.id}) is None:\n            ledger.credit(notification.customer_id, notification.amount, notification.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(notification.customer_id, notification.amount, notification.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:12:43.375000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 2,
+            "result": {
+              "runId": "verify_d5675b7a",
+              "caseId": "B",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "fe2601e2a8831ed3438b83f3ba6d5cb6311793047984e2b24f97e6a1e0faa408",
+                "63d89cd31d1fea03f9365286dd5bf1f6e2bc5d7e05ca097a3d2865bb8af1f98d",
+                "0a138844ad51ef3f5e39fb74cc4f6f649718ec9abc7465ceb366116cb97b1bb4"
+              ],
+              "durationMs": 3925,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:12:47.392000Z"
+        },
+        {
+          "runId": "run_5e952a61ff63",
+          "seq": 13,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 2,
+            "seenBefore": false,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": null,
+            "summary": "New incident. Fix verified on the second attempt, 6 tests pass."
+          },
+          "at": "2026-11-14T19:12:47.483000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": null,
+        "earnMemoryId": null,
+        "earnSearchable": null,
+        "earnLengths": null,
+        "memoriesInDb": 0,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b_off_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b_off_1",
+          "expectedDb": "traceback_eval_1114191217_b_off_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B",
+      "arm": "placebo",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b_placebo_1",
+      "error": null,
+      "runId": "run_738a3ac834ed",
+      "incidentId": "inc_f8cef6bae1e7",
+      "runView": {
+        "runId": "run_738a3ac834ed",
+        "incidentId": "inc_f8cef6bae1e7",
+        "caseId": "B",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 2,
+        "seenBefore": false,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": null,
+        "memoryMode": "placebo",
+        "budget": {
+          "toolCalls": 5,
+          "patchAttempts": 2,
+          "elapsedMs": 21380,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_f8cef6bae1e7",
+            "caseId": "B",
+            "teamId": "team-payments",
+            "memoryMode": "placebo"
+          },
+          "at": "2026-11-14T19:12:58.402000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_f8cef6bae1e7",
+              "repositoryId": "payments-webhooks",
+              "summary": "Since the provider's timeout incident, our notification endpoint is throwing server errors and the provider keeps retrying. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:21 in handle_provider_event",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_2001",
+              "deliveryEventIds": [
+                "evt_2001",
+                "evt_2001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:21 in handle_provider_event"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:12:58.601000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 3,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:13:00.673000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 4,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_e6e5cd8f3f",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:13:00.801000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:13:00.893000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:13:00.989000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/ledger.py"
+            }
+          },
+          "at": "2026-11-14T19:13:02.479000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_9846638021",
+            "summary": "read app/ledger.py"
+          },
+          "at": "2026-11-14T19:13:02.577000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 9,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Inbound payment notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentNotification(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef handle_provider_event(notification: PaymentNotification) -> dict:\n    db = get_db()\n    payments = db.payments\n    try:\n        payments.insert_one(\n            {\n                \"provider_event_id\": notification.id,\n                \"customer_id\": notification.customer_id,\n                \"amount\": notification.amount,\n            }\n        )\n    except DuplicateKeyError:\n        # Redelivery of an already-recorded event: acknowledge without\n        # double-crediting. Credit only if a prior attempt failed before it.\n        if db.ledger.find_one({\"event_id\": notification.id}) is None:\n            ledger.credit(notification.customer_id, notification.amount, notification.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(notification.customer_id, notification.amount, notification.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:13:07.599000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 10,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_c34417c6",
+              "caseId": "B",
+              "status": "failed",
+              "beforeFailed": true,
+              "afterPassed": false,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": false,
+                  "detail": "AssertionError: a replayed provider event must be recorded for month-end reconciliation\nassert 0 == 1"
+                }
+              ],
+              "evidenceHashes": [
+                "ef2337a12bcb855d01b2bdf378d6ae99811f82c33e9098dae96af59551ba1597",
+                "81e7b8c01f115c9144ff852d875b4352b426773601ea71eb296e27e74a708059",
+                "90b814c1fc860d30f101e17ebde763d29a762c83002f00b2dd011a4b872ed6ac"
+              ],
+              "durationMs": 3757,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:13:11.456000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 2,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Inbound payment notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentNotification(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef handle_provider_event(notification: PaymentNotification) -> dict:\n    db = get_db()\n    payments = db.payments\n    try:\n        payments.insert_one(\n            {\n                \"provider_event_id\": notification.id,\n                \"customer_id\": notification.customer_id,\n                \"amount\": notification.amount,\n            }\n        )\n    except DuplicateKeyError:\n        # Redelivery of an already-recorded event: record the replay for\n        # month-end reconciliation and acknowledge without double-crediting.\n        ledger.mark_replayed(notification.id)\n        if db.ledger.find_one({\"event_id\": notification.id}) is None:\n            ledger.credit(notification.customer_id, notification.amount, notification.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(notification.customer_id, notification.amount, notification.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:13:15.725000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 2,
+            "result": {
+              "runId": "verify_3bf079d4",
+              "caseId": "B",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "ad640fd9ec492e4d94bd19e1c202f67f2d50bf94e698aac0ed04f63621177e9f",
+                "8392185c806a52ffebc9e152c89c1edeebb0f1748e6fd0b468353a49697cec94",
+                "f63d20b6c6fcc4166c984e03903ea3d11bc26a4dc50e80d776bfec5f7deefb50"
+              ],
+              "durationMs": 3768,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:13:19.589000Z"
+        },
+        {
+          "runId": "run_738a3ac834ed",
+          "seq": 13,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 2,
+            "seenBefore": false,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": null,
+            "summary": "New incident. Fix verified on the second attempt, 6 tests pass."
+          },
+          "at": "2026-11-14T19:13:19.686000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": null,
+        "earnMemoryId": null,
+        "earnSearchable": null,
+        "earnLengths": null,
+        "memoriesInDb": 0,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b_placebo_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b_placebo_1",
+          "expectedDb": "traceback_eval_1114191217_b_placebo_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B",
+      "arm": "real",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b_real_1",
+      "error": null,
+      "runId": "run_07efeae9de13",
+      "incidentId": "inc_8616390aa708",
+      "runView": {
+        "runId": "run_07efeae9de13",
+        "incidentId": "inc_8616390aa708",
+        "caseId": "B",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 1,
+        "seenBefore": true,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": {
+          "memoryId": "mem_eb0628660ce9",
+          "version": 1,
+          "ownerTeamId": "team-payments",
+          "match": "strong"
+        },
+        "memoryMode": "real",
+        "budget": {
+          "toolCalls": 4,
+          "patchAttempts": 1,
+          "elapsedMs": 14120,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [
+          {
+            "memory": {
+              "memoryId": "mem_eb0628660ce9",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "rank": 1,
+            "decision": "used",
+            "preconditions": [
+              {
+                "check": "dup_key_field",
+                "expected": "provider_event_id",
+                "actual": "provider_event_id",
+                "held": true
+              },
+              {
+                "check": "same_event_id_on_both_deliveries",
+                "expected": "true",
+                "actual": "true",
+                "held": true
+              }
+            ]
+          }
+        ],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_8616390aa708",
+            "caseId": "B",
+            "teamId": "team-payments",
+            "memoryMode": "real"
+          },
+          "at": "2026-11-14T19:14:02.400000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_8616390aa708",
+              "repositoryId": "payments-webhooks",
+              "summary": "Since the provider's timeout incident, our notification endpoint is throwing server errors and the provider keeps retrying. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:21 in handle_provider_event",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_2001",
+              "deliveryEventIds": [
+                "evt_2001",
+                "evt_2001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:21 in handle_provider_event"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:14:02.615000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 3,
+          "type": "recall",
+          "payload": {
+            "count": 1,
+            "memories": [
+              {
+                "memoryId": "mem_eb0628660ce9",
+                "version": 1,
+                "ownerTeamId": "team-payments",
+                "match": "strong"
+              }
+            ]
+          },
+          "at": "2026-11-14T19:14:03.540000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 4,
+          "type": "precondition_check",
+          "payload": {
+            "memory": {
+              "memoryId": "mem_eb0628660ce9",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "held": 2,
+            "total": 2,
+            "results": [
+              {
+                "check": "dup_key_field",
+                "expected": "provider_event_id",
+                "actual": "provider_event_id",
+                "held": true
+              },
+              {
+                "check": "same_event_id_on_both_deliveries",
+                "expected": "true",
+                "actual": "true",
+                "held": true
+              }
+            ],
+            "notAppliedReason": null
+          },
+          "at": "2026-11-14T19:14:03.630000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:14:05.753000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_e6e5cd8f3f",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:14:05.847000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:14:05.937000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:14:06.027000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 9,
+          "type": "tool_call",
+          "payload": {
+            "tool": "search_code",
+            "args": {
+              "query": "def "
+            }
+          },
+          "at": "2026-11-14T19:14:07.508000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 10,
+          "type": "tool_result",
+          "payload": {
+            "tool": "search_code",
+            "evidenceId": "ev_70963487de",
+            "summary": "searched \"def \": 10 hits"
+          },
+          "at": "2026-11-14T19:14:07.608000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Inbound payment notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentNotification(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef handle_provider_event(notification: PaymentNotification) -> dict:\n    payments = get_db().payments\n    try:\n        payments.insert_one(\n            {\n                \"provider_event_id\": notification.id,\n                \"customer_id\": notification.customer_id,\n                \"amount\": notification.amount,\n            }\n        )\n    except DuplicateKeyError:\n        # Already processed: don't credit again, record the replay.\n        ledger.mark_replayed(notification.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(notification.customer_id, notification.amount, notification.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": {
+              "memoryId": "mem_eb0628660ce9",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "fromMemoryLines": [
+              5,
+              22,
+              30,
+              32,
+              33
+            ]
+          },
+          "at": "2026-11-14T19:14:11.946000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_c99c9392",
+              "caseId": "B",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "2cdadefb5eb6aa1521e07ee5342552c86962f3914a705357bae2a056d8ac6086",
+                "27883a207b539987980a5eddc276d4a7959fb136566ecac8fb5767d067c88ebd",
+                "9b062da77537c07dcfce9a4600d08d733bdec1a968df80370c51464d208fbc92"
+              ],
+              "durationMs": 3757,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:14:15.793000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 13,
+          "type": "memory_outcome",
+          "payload": {
+            "outcome": "renewed",
+            "memory": {
+              "memoryId": "mem_eb0628660ce9",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "message": "Memory proven again; its expiry was extended."
+          },
+          "at": "2026-11-14T19:14:16.330000Z"
+        },
+        {
+          "runId": "run_07efeae9de13",
+          "seq": 14,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 1,
+            "seenBefore": true,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": {
+              "memoryId": "mem_eb0628660ce9",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "summary": "Seen before. Fix verified on the first attempt, 6 tests pass. One memory used, owned by Payments."
+          },
+          "at": "2026-11-14T19:14:16.431000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": true,
+        "earnMemoryId": "mem_eb0628660ce9",
+        "earnSearchable": true,
+        "earnLengths": {
+          "retrieval_text": 296,
+          "cause_and_resolution": 245,
+          "patch": 880,
+          "injected": 1125
+        },
+        "earnSeeded": false,
+        "memoriesInDb": 1,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b_real_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b_real_1",
+          "expectedDb": "traceback_eval_1114191217_b_real_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B2",
+      "arm": "off",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b2_off_1",
+      "error": null,
+      "runId": "run_8903823654f0",
+      "incidentId": "inc_367f39d46454",
+      "runView": {
+        "runId": "run_8903823654f0",
+        "incidentId": "inc_367f39d46454",
+        "caseId": "B2",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 2,
+        "seenBefore": false,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": null,
+        "memoryMode": "off",
+        "budget": {
+          "toolCalls": 5,
+          "patchAttempts": 2,
+          "elapsedMs": 22569,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_8903823654f0",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_367f39d46454",
+            "caseId": "B2",
+            "teamId": "team-payments",
+            "memoryMode": "off"
+          },
+          "at": "2026-11-14T19:14:26.470000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_367f39d46454",
+              "repositoryId": "payments-webhooks",
+              "summary": "Our payment callback endpoint is returning 500 for some callbacks, and the provider keeps trying again. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:19 in store_payment",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_6001",
+              "deliveryEventIds": [
+                "evt_6001",
+                "evt_6001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:30 in process_callback",
+                "app/webhooks.py:19 in store_payment"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:14:26.706000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 3,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:14:28.686000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 4,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_a650f770fa",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:14:28.776000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:14:28.871000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:14:28.960000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/ledger.py"
+            }
+          },
+          "at": "2026-11-14T19:14:30.708000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_9846638021",
+            "summary": "read app/ledger.py"
+          },
+          "at": "2026-11-14T19:14:30.802000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 9,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Provider payment callbacks.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentCallback(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\ndef store_payment(callback: PaymentCallback) -> bool:\n    \"\"\"Store the payment. Returns False if this event was already stored.\"\"\"\n    try:\n        get_db().payments.insert_one(\n            {\n                \"provider_event_id\": callback.id,\n                \"customer_id\": callback.customer_id,\n                \"amount\": callback.amount,\n            }\n        )\n    except DuplicateKeyError:\n        return False\n    return True\n\n\n@router.post(\"/webhooks/provider\")\ndef process_callback(callback: PaymentCallback) -> dict:\n    is_new = store_payment(callback)\n    if is_new or get_db().ledger.find_one({\"event_id\": callback.id}) is None:\n        # Credit once; on a retry only if the earlier attempt never reached the ledger.\n        ledger.credit(callback.customer_id, callback.amount, callback.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:14:36.317000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 10,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_61ad03d0",
+              "caseId": "B2",
+              "status": "failed",
+              "beforeFailed": true,
+              "afterPassed": false,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": false,
+                  "detail": "AssertionError: a replayed provider event must be recorded for month-end reconciliation\nassert 0 == 1"
+                }
+              ],
+              "evidenceHashes": [
+                "186554a6d1d9d80e8475c5f289cc9a2883894e8e267f04b939036692fe9c1408",
+                "0064937986b27ef0d91f6bca42b9522712fe66bc745112bd3c19a9be2fbd0ca3",
+                "1a73f3cb4bcbabb05bce22f469e378411dc755c371d0a85278b1e00d82f11a76"
+              ],
+              "durationMs": 3815,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:14:40.221000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 2,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Provider payment callbacks.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentCallback(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\ndef store_payment(callback: PaymentCallback) -> bool:\n    \"\"\"Store the payment. Returns False if this event was already stored.\"\"\"\n    try:\n        get_db().payments.insert_one(\n            {\n                \"provider_event_id\": callback.id,\n                \"customer_id\": callback.customer_id,\n                \"amount\": callback.amount,\n            }\n        )\n    except DuplicateKeyError:\n        return False\n    return True\n\n\n@router.post(\"/webhooks/provider\")\ndef process_callback(callback: PaymentCallback) -> dict:\n    if store_payment(callback):\n        ledger.credit(callback.customer_id, callback.amount, callback.id)\n    else:\n        # Replayed delivery: acknowledge it, record for month-end reconciliation.\n        ledger.mark_replayed(callback.id)\n        if get_db().ledger.find_one({\"event_id\": callback.id}) is None:\n            # Earlier attempt stored the payment but never credited the ledger.\n            ledger.credit(callback.customer_id, callback.amount, callback.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:14:44.827000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 2,
+            "result": {
+              "runId": "verify_8cbf639d",
+              "caseId": "B2",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "6b38a3c55f0f1c19a229d679192e18302878addc79b8c8b26118a75bdf06b3eb",
+                "c392b14f844d63e7345ce612912be1360e717053666fa9aadac831ed280381cd",
+                "2392237727845573007920caf9d1bb48b9c029d12bb4ee69720dea1db780aae2"
+              ],
+              "durationMs": 3938,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:14:48.861000Z"
+        },
+        {
+          "runId": "run_8903823654f0",
+          "seq": 13,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 2,
+            "seenBefore": false,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": null,
+            "summary": "New incident. Fix verified on the second attempt, 6 tests pass."
+          },
+          "at": "2026-11-14T19:14:48.949000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": null,
+        "earnMemoryId": null,
+        "earnSearchable": null,
+        "earnLengths": null,
+        "memoriesInDb": 0,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b2_off_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b2_off_1",
+          "expectedDb": "traceback_eval_1114191217_b2_off_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B2",
+      "arm": "placebo",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b2_placebo_1",
+      "error": null,
+      "runId": "run_3d4826dc92df",
+      "incidentId": "inc_cac1f310066c",
+      "runView": {
+        "runId": "run_3d4826dc92df",
+        "incidentId": "inc_cac1f310066c",
+        "caseId": "B2",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 2,
+        "seenBefore": false,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": null,
+        "memoryMode": "placebo",
+        "budget": {
+          "toolCalls": 5,
+          "patchAttempts": 2,
+          "elapsedMs": 21744,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_cac1f310066c",
+            "caseId": "B2",
+            "teamId": "team-payments",
+            "memoryMode": "placebo"
+          },
+          "at": "2026-11-14T19:14:58.594000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_cac1f310066c",
+              "repositoryId": "payments-webhooks",
+              "summary": "Our payment callback endpoint is returning 500 for some callbacks, and the provider keeps trying again. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:19 in store_payment",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_6001",
+              "deliveryEventIds": [
+                "evt_6001",
+                "evt_6001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:30 in process_callback",
+                "app/webhooks.py:19 in store_payment"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:14:58.775000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 3,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:15:00.721000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 4,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_a650f770fa",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:15:00.810000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:15:00.900000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:15:00.989000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/ledger.py"
+            }
+          },
+          "at": "2026-11-14T19:15:02.715000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_9846638021",
+            "summary": "read app/ledger.py"
+          },
+          "at": "2026-11-14T19:15:02.807000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 9,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Provider payment callbacks.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentCallback(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\ndef store_payment(callback: PaymentCallback) -> bool:\n    \"\"\"Store the payment. Returns False if this event was already stored.\"\"\"\n    try:\n        get_db().payments.insert_one(\n            {\n                \"provider_event_id\": callback.id,\n                \"customer_id\": callback.customer_id,\n                \"amount\": callback.amount,\n            }\n        )\n    except DuplicateKeyError:\n        return False\n    return True\n\n\n@router.post(\"/webhooks/provider\")\ndef process_callback(callback: PaymentCallback) -> dict:\n    if not store_payment(callback):\n        # Redelivery of an event already processed: acknowledge without\n        # crediting again. Credit only if the earlier attempt never did.\n        if get_db().ledger.find_one({\"event_id\": callback.id}) is None:\n            ledger.credit(callback.customer_id, callback.amount, callback.id)\n        return {\"ok\": True}\n    ledger.credit(callback.customer_id, callback.amount, callback.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:15:08.250000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 10,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_cb6c0f77",
+              "caseId": "B2",
+              "status": "failed",
+              "beforeFailed": true,
+              "afterPassed": false,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": false,
+                  "detail": "AssertionError: a replayed provider event must be recorded for month-end reconciliation\nassert 0 == 1"
+                }
+              ],
+              "evidenceHashes": [
+                "7f2bcb8d55d03e2b7acd2e89b5427f14b768081275bb60d7fb5fab32f7cb14cc",
+                "3c6144350184957eb5bea50273554d6efdec3ee6b290cddadd140c95068e5039",
+                "acefb32721cf1bbf55ac598a80a6df9d93452ca2d7c3e5d6a4b7cf4ae845aa27"
+              ],
+              "durationMs": 3762,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:15:12.106000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 2,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Provider payment callbacks.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentCallback(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\ndef store_payment(callback: PaymentCallback) -> bool:\n    \"\"\"Store the payment. Returns False if this event was already stored.\"\"\"\n    try:\n        get_db().payments.insert_one(\n            {\n                \"provider_event_id\": callback.id,\n                \"customer_id\": callback.customer_id,\n                \"amount\": callback.amount,\n            }\n        )\n    except DuplicateKeyError:\n        return False\n    return True\n\n\n@router.post(\"/webhooks/provider\")\ndef process_callback(callback: PaymentCallback) -> dict:\n    if not store_payment(callback):\n        # Redelivery of an already-processed event: record it for\n        # month-end reconciliation, do not credit again, and acknowledge.\n        ledger.mark_replayed(callback.id)\n        return {\"ok\": True}\n    ledger.credit(callback.customer_id, callback.amount, callback.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:15:16.221000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 2,
+            "result": {
+              "runId": "verify_19d73b81",
+              "caseId": "B2",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "bd4956d73b7f5ae6603bff8747da2d5766e8690752148938935106b1a95c4ccb",
+                "fe54d774aa05a19624b91136555064e29cd4e8dcf90708f1ebb46b273c816b5b",
+                "68a00d296e6350cf471975c37045a2b8cd4efa89a21dd7d2727336eda66b16aa"
+              ],
+              "durationMs": 3843,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:15:20.163000Z"
+        },
+        {
+          "runId": "run_3d4826dc92df",
+          "seq": 13,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 2,
+            "seenBefore": false,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": null,
+            "summary": "New incident. Fix verified on the second attempt, 6 tests pass."
+          },
+          "at": "2026-11-14T19:15:20.250000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": null,
+        "earnMemoryId": null,
+        "earnSearchable": null,
+        "earnLengths": null,
+        "memoriesInDb": 0,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b2_placebo_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b2_placebo_1",
+          "expectedDb": "traceback_eval_1114191217_b2_placebo_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B2",
+      "arm": "real",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b2_real_1",
+      "error": null,
+      "runId": "run_8d554f8869da",
+      "incidentId": "inc_a89700a5620f",
+      "runView": {
+        "runId": "run_8d554f8869da",
+        "incidentId": "inc_a89700a5620f",
+        "caseId": "B2",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 1,
+        "seenBefore": true,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": {
+          "memoryId": "mem_328bb5d01a50",
+          "version": 1,
+          "ownerTeamId": "team-payments",
+          "match": "strong"
+        },
+        "memoryMode": "real",
+        "budget": {
+          "toolCalls": 4,
+          "patchAttempts": 1,
+          "elapsedMs": 14502,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [
+          {
+            "memory": {
+              "memoryId": "mem_328bb5d01a50",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "rank": 1,
+            "decision": "used",
+            "preconditions": [
+              {
+                "check": "dup_key_field",
+                "expected": "provider_event_id",
+                "actual": "provider_event_id",
+                "held": true
+              },
+              {
+                "check": "same_event_id_on_both_deliveries",
+                "expected": "true",
+                "actual": "true",
+                "held": true
+              }
+            ]
+          }
+        ],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_a89700a5620f",
+            "caseId": "B2",
+            "teamId": "team-payments",
+            "memoryMode": "real"
+          },
+          "at": "2026-11-14T19:16:02.699000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_a89700a5620f",
+              "repositoryId": "payments-webhooks",
+              "summary": "Our payment callback endpoint is returning 500 for some callbacks, and the provider keeps trying again. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:19 in store_payment",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_6001",
+              "deliveryEventIds": [
+                "evt_6001",
+                "evt_6001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:30 in process_callback",
+                "app/webhooks.py:19 in store_payment"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:16:02.894000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 3,
+          "type": "recall",
+          "payload": {
+            "count": 1,
+            "memories": [
+              {
+                "memoryId": "mem_328bb5d01a50",
+                "version": 1,
+                "ownerTeamId": "team-payments",
+                "match": "strong"
+              }
+            ]
+          },
+          "at": "2026-11-14T19:16:03.835000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 4,
+          "type": "precondition_check",
+          "payload": {
+            "memory": {
+              "memoryId": "mem_328bb5d01a50",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "held": 2,
+            "total": 2,
+            "results": [
+              {
+                "check": "dup_key_field",
+                "expected": "provider_event_id",
+                "actual": "provider_event_id",
+                "held": true
+              },
+              {
+                "check": "same_event_id_on_both_deliveries",
+                "expected": "true",
+                "actual": "true",
+                "held": true
+              }
+            ],
+            "notAppliedReason": null
+          },
+          "at": "2026-11-14T19:16:03.935000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:16:06.238000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_a650f770fa",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:16:06.335000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:16:06.425000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:16:06.515000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 9,
+          "type": "tool_call",
+          "payload": {
+            "tool": "search_code",
+            "args": {
+              "query": "def "
+            }
+          },
+          "at": "2026-11-14T19:16:08.042000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 10,
+          "type": "tool_result",
+          "payload": {
+            "tool": "search_code",
+            "evidenceId": "ev_5ff76a498b",
+            "summary": "searched \"def \": 11 hits"
+          },
+          "at": "2026-11-14T19:16:08.461000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Provider payment callbacks.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PaymentCallback(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\ndef store_payment(callback: PaymentCallback) -> bool:\n    \"\"\"Store the payment. Returns False if this event was already stored.\"\"\"\n    try:\n        get_db().payments.insert_one(\n            {\n                \"provider_event_id\": callback.id,\n                \"customer_id\": callback.customer_id,\n                \"amount\": callback.amount,\n            }\n        )\n    except DuplicateKeyError:\n        return False\n    return True\n\n\n@router.post(\"/webhooks/provider\")\ndef process_callback(callback: PaymentCallback) -> dict:\n    if not store_payment(callback):\n        # Already processed: don't credit again, record the replay.\n        ledger.mark_replayed(callback.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(callback.customer_id, callback.amount, callback.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": {
+              "memoryId": "mem_328bb5d01a50",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "fromMemoryLines": [
+              5,
+              21,
+              29,
+              38,
+              39
+            ]
+          },
+          "at": "2026-11-14T19:16:12.505000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_cc72906d",
+              "caseId": "B2",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "e10c2b99d6ee0fe5b22a05390f1ff28e3e56a1e88c4d71ebab2c0c64ff22e3fc",
+                "b07265038fb3c026a166a6e5d535434e381a785680c445d0576c45ed05faa7fe",
+                "95af9330e1d2be3b42b6174d6eeae70019fc6fc4bc11605f93fe66968a7b9e70"
+              ],
+              "durationMs": 3767,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:16:16.365000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 13,
+          "type": "memory_outcome",
+          "payload": {
+            "outcome": "renewed",
+            "memory": {
+              "memoryId": "mem_328bb5d01a50",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "message": "Memory proven again; its expiry was extended."
+          },
+          "at": "2026-11-14T19:16:17.011000Z"
+        },
+        {
+          "runId": "run_8d554f8869da",
+          "seq": 14,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 1,
+            "seenBefore": true,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": {
+              "memoryId": "mem_328bb5d01a50",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "summary": "Seen before. Fix verified on the first attempt, 6 tests pass. One memory used, owned by Payments."
+          },
+          "at": "2026-11-14T19:16:17.099000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": true,
+        "earnMemoryId": "mem_328bb5d01a50",
+        "earnSearchable": true,
+        "earnLengths": {
+          "retrieval_text": 296,
+          "cause_and_resolution": 245,
+          "patch": 880,
+          "injected": 1125
+        },
+        "earnSeeded": false,
+        "memoriesInDb": 1,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b2_real_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b2_real_1",
+          "expectedDb": "traceback_eval_1114191217_b2_real_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B3",
+      "arm": "off",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b3_off_1",
+      "error": null,
+      "runId": "run_f13aae63bc72",
+      "incidentId": "inc_bdcdae60720a",
+      "runView": {
+        "runId": "run_f13aae63bc72",
+        "incidentId": "inc_bdcdae60720a",
+        "caseId": "B3",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 2,
+        "seenBefore": false,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": null,
+        "memoryMode": "off",
+        "budget": {
+          "toolCalls": 5,
+          "patchAttempts": 2,
+          "elapsedMs": 21571,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_bdcdae60720a",
+            "caseId": "B3",
+            "teamId": "team-payments",
+            "memoryMode": "off"
+          },
+          "at": "2026-11-14T19:16:26.310000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_bdcdae60720a",
+              "repositoryId": "payments-webhooks",
+              "summary": "Some payment postings from the provider are being rejected with server errors. It looks like the provider repeats notifications it thinks we missed. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:26 in on_payment_posted",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_7001",
+              "deliveryEventIds": [
+                "evt_7001",
+                "evt_7001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:26 in on_payment_posted"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:16:26.502000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 3,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:16:28.508000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 4,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_086755a71e",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:16:28.598000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:16:28.687000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:16:28.785000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/ledger.py"
+            }
+          },
+          "at": "2026-11-14T19:16:30.897000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_9846638021",
+            "summary": "read app/ledger.py"
+          },
+          "at": "2026-11-14T19:16:30.989000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 9,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Payment posting endpoint for provider notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PostedPayment(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef on_payment_posted(posted: PostedPayment) -> dict:\n    collection = get_db()[\"payments\"]\n    record = {\n        \"provider_event_id\": posted.id,\n        \"customer_id\": posted.customer_id,\n        \"amount\": posted.amount,\n    }\n    try:\n        collection.insert_one(record)\n    except DuplicateKeyError:\n        # Redelivery of an event already processed: acknowledge without\n        # crediting the ledger a second time.\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(posted.customer_id, posted.amount, posted.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:16:36.220000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 10,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_b48f1cb8",
+              "caseId": "B3",
+              "status": "failed",
+              "beforeFailed": true,
+              "afterPassed": false,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": false,
+                  "detail": "AssertionError: a replayed provider event must be recorded for month-end reconciliation\nassert 0 == 1"
+                }
+              ],
+              "evidenceHashes": [
+                "2ec7e881476b0e33498fa521fa17ec765c1bf9d99efd127118155b4533608e4c",
+                "79d1eb48dbe19f50df65c731c46af61c93586bd7d087ff0953192e52775b9d79",
+                "b912d4194a33b5717b7ceb9398e8b1c8259cd92d2f34d199afada9b189eaa720"
+              ],
+              "durationMs": 3759,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:16:40.084000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 2,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Payment posting endpoint for provider notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PostedPayment(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef on_payment_posted(posted: PostedPayment) -> dict:\n    collection = get_db()[\"payments\"]\n    record = {\n        \"provider_event_id\": posted.id,\n        \"customer_id\": posted.customer_id,\n        \"amount\": posted.amount,\n    }\n    try:\n        collection.insert_one(record)\n    except DuplicateKeyError:\n        # Redelivery of an already-processed event: record it for\n        # month-end reconciliation, don't credit again, and acknowledge.\n        ledger.mark_replayed(posted.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(posted.customer_id, posted.amount, posted.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:16:43.869000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 2,
+            "result": {
+              "runId": "verify_d3acbb91",
+              "caseId": "B3",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "2220eab00315d26db45424c74b285e518c71884b9cb352e84874ed7a83a72fdf",
+                "2c46448df45017d74219bed92090f2bd26d367461e232cb463515da21157bba1",
+                "a9de025ca4dadc7c4379b974f642a9ba164346bb508ea53f5f38cfdcd530c0fc"
+              ],
+              "durationMs": 3734,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:16:47.702000Z"
+        },
+        {
+          "runId": "run_f13aae63bc72",
+          "seq": 13,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 2,
+            "seenBefore": false,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": null,
+            "summary": "New incident. Fix verified on the second attempt, 6 tests pass."
+          },
+          "at": "2026-11-14T19:16:47.791000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": null,
+        "earnMemoryId": null,
+        "earnSearchable": null,
+        "earnLengths": null,
+        "memoriesInDb": 0,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b3_off_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b3_off_1",
+          "expectedDb": "traceback_eval_1114191217_b3_off_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B3",
+      "arm": "placebo",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b3_placebo_1",
+      "error": null,
+      "runId": "run_b6dee373b90f",
+      "incidentId": "inc_bb5b9b57b042",
+      "runView": {
+        "runId": "run_b6dee373b90f",
+        "incidentId": "inc_bb5b9b57b042",
+        "caseId": "B3",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 2,
+        "seenBefore": false,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": null,
+        "memoryMode": "placebo",
+        "budget": {
+          "toolCalls": 5,
+          "patchAttempts": 2,
+          "elapsedMs": 20807,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_bb5b9b57b042",
+            "caseId": "B3",
+            "teamId": "team-payments",
+            "memoryMode": "placebo"
+          },
+          "at": "2026-11-14T19:16:57.830000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_bb5b9b57b042",
+              "repositoryId": "payments-webhooks",
+              "summary": "Some payment postings from the provider are being rejected with server errors. It looks like the provider repeats notifications it thinks we missed. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:26 in on_payment_posted",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_7001",
+              "deliveryEventIds": [
+                "evt_7001",
+                "evt_7001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:26 in on_payment_posted"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:16:58.010000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 3,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:16:59.987000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 4,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_086755a71e",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:17:00.080000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:17:00.187000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:17:00.277000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/ledger.py"
+            }
+          },
+          "at": "2026-11-14T19:17:01.965000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_9846638021",
+            "summary": "read app/ledger.py"
+          },
+          "at": "2026-11-14T19:17:02.058000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 9,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Payment posting endpoint for provider notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PostedPayment(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef on_payment_posted(posted: PostedPayment) -> dict:\n    collection = get_db()[\"payments\"]\n    record = {\n        \"provider_event_id\": posted.id,\n        \"customer_id\": posted.customer_id,\n        \"amount\": posted.amount,\n    }\n    try:\n        collection.insert_one(record)\n    except DuplicateKeyError:\n        # Provider retry of an event we already recorded: acknowledge, don't re-credit.\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(posted.customer_id, posted.amount, posted.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:17:06.913000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 10,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_2ade4089",
+              "caseId": "B3",
+              "status": "failed",
+              "beforeFailed": true,
+              "afterPassed": false,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": false,
+                  "detail": "AssertionError: a replayed provider event must be recorded for month-end reconciliation\nassert 0 == 1"
+                }
+              ],
+              "evidenceHashes": [
+                "91a3b4bb15e7dbb1247f1c6b48a303772f73c2016bdde21edd88f09090b928e8",
+                "dac95a2996c293bda6c5eec92835e89d3865b69c669b30983301a228b6ea396b",
+                "d88fa4e409bd34551e248f376409baafff0f1a1eaf8d9dd1ff344bf8fa9586ff"
+              ],
+              "durationMs": 3768,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:17:10.775000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 2,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Payment posting endpoint for provider notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PostedPayment(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef on_payment_posted(posted: PostedPayment) -> dict:\n    collection = get_db()[\"payments\"]\n    record = {\n        \"provider_event_id\": posted.id,\n        \"customer_id\": posted.customer_id,\n        \"amount\": posted.amount,\n    }\n    try:\n        collection.insert_one(record)\n    except DuplicateKeyError:\n        # Provider retry of an event already recorded: log the replay, acknowledge, don't re-credit.\n        ledger.mark_replayed(posted.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(posted.customer_id, posted.amount, posted.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": null,
+            "fromMemoryLines": []
+          },
+          "at": "2026-11-14T19:17:14.619000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 2,
+            "result": {
+              "runId": "verify_6f1285ca",
+              "caseId": "B3",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "0d64bdc91fb12efedc2d9a37815c980b59825560c400553d4b31d9a5a9d8cbea",
+                "dc851e1952a5ae6a518ce1383f5526b266a153af611573e614e69cb698fd9990",
+                "8bc892d054df767ca53d16bf49f12b99105135dfd22579063f8970a5f2c0cafa"
+              ],
+              "durationMs": 3745,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:17:18.456000Z"
+        },
+        {
+          "runId": "run_b6dee373b90f",
+          "seq": 13,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 2,
+            "seenBefore": false,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": null,
+            "summary": "New incident. Fix verified on the second attempt, 6 tests pass."
+          },
+          "at": "2026-11-14T19:17:18.547000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": null,
+        "earnMemoryId": null,
+        "earnSearchable": null,
+        "earnLengths": null,
+        "memoriesInDb": 0,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b3_placebo_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b3_placebo_1",
+          "expectedDb": "traceback_eval_1114191217_b3_placebo_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    },
+    {
+      "case": "B3",
+      "arm": "real",
+      "repeat": 1,
+      "db": "traceback_eval_1114191217_b3_real_1",
+      "error": null,
+      "runId": "run_724e29fab5e1",
+      "incidentId": "inc_caa762c0fbb8",
+      "runView": {
+        "runId": "run_724e29fab5e1",
+        "incidentId": "inc_caa762c0fbb8",
+        "caseId": "B3",
+        "teamId": "team-payments",
+        "status": "finished",
+        "outcome": "verified",
+        "attempt": 1,
+        "seenBefore": true,
+        "testsPassed": 6,
+        "testsTotal": 6,
+        "memoryUsed": {
+          "memoryId": "mem_5e9fb7d683fb",
+          "version": 1,
+          "ownerTeamId": "team-payments",
+          "match": "strong"
+        },
+        "memoryMode": "real",
+        "budget": {
+          "toolCalls": 4,
+          "patchAttempts": 1,
+          "elapsedMs": 13445,
+          "maxToolCalls": 8,
+          "maxPatchAttempts": 2,
+          "deadlineSeconds": 120
+        },
+        "memoryInfluence": [
+          {
+            "memory": {
+              "memoryId": "mem_5e9fb7d683fb",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "rank": 1,
+            "decision": "used",
+            "preconditions": [
+              {
+                "check": "dup_key_field",
+                "expected": "provider_event_id",
+                "actual": "provider_event_id",
+                "held": true
+              },
+              {
+                "check": "same_event_id_on_both_deliveries",
+                "expected": "true",
+                "actual": "true",
+                "held": true
+              }
+            ]
+          }
+        ],
+        "model": "claude-sonnet-5-5",
+        "promptVersion": "system_v1"
+      },
+      "events": [
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 1,
+          "type": "run_started",
+          "payload": {
+            "incidentId": "inc_caa762c0fbb8",
+            "caseId": "B3",
+            "teamId": "team-payments",
+            "memoryMode": "real"
+          },
+          "at": "2026-11-14T19:18:03.983000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 2,
+          "type": "observation",
+          "payload": {
+            "observations": {
+              "incidentId": "inc_caa762c0fbb8",
+              "repositoryId": "payments-webhooks",
+              "summary": "Some payment postings from the provider are being rejected with server errors. It looks like the provider repeats notifications it thinks we missed. | DuplicateKeyError; E11000 duplicate key on provider_event_id (index provider_event_id_1); during POST /webhooks/provider; 2 deliveries, same event id; at app/webhooks.py:26 in on_payment_posted",
+              "errorCode": "11000",
+              "operation": "POST /webhooks/provider",
+              "exceptionType": "DuplicateKeyError",
+              "dupKeyIndex": "provider_event_id_1",
+              "dupKeyField": "provider_event_id",
+              "dupKeyValue": "evt_7001",
+              "deliveryEventIds": [
+                "evt_7001",
+                "evt_7001"
+              ],
+              "stackFrames": [
+                "app/webhooks.py:26 in on_payment_posted"
+              ],
+              "versions": {}
+            }
+          },
+          "at": "2026-11-14T19:18:04.170000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 3,
+          "type": "recall",
+          "payload": {
+            "count": 1,
+            "memories": [
+              {
+                "memoryId": "mem_5e9fb7d683fb",
+                "version": 1,
+                "ownerTeamId": "team-payments",
+                "match": "strong"
+              }
+            ]
+          },
+          "at": "2026-11-14T19:18:05.103000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 4,
+          "type": "precondition_check",
+          "payload": {
+            "memory": {
+              "memoryId": "mem_5e9fb7d683fb",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "held": 2,
+            "total": 2,
+            "results": [
+              {
+                "check": "dup_key_field",
+                "expected": "provider_event_id",
+                "actual": "provider_event_id",
+                "held": true
+              },
+              {
+                "check": "same_event_id_on_both_deliveries",
+                "expected": "true",
+                "actual": "true",
+                "held": true
+              }
+            ],
+            "notAppliedReason": null
+          },
+          "at": "2026-11-14T19:18:05.193000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 5,
+          "type": "tool_call",
+          "payload": {
+            "tool": "read_file",
+            "args": {
+              "path": "app/webhooks.py"
+            }
+          },
+          "at": "2026-11-14T19:18:07.335000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 6,
+          "type": "tool_result",
+          "payload": {
+            "tool": "read_file",
+            "evidenceId": "ev_086755a71e",
+            "summary": "read app/webhooks.py"
+          },
+          "at": "2026-11-14T19:18:07.427000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 7,
+          "type": "tool_call",
+          "payload": {
+            "tool": "list_files",
+            "args": {}
+          },
+          "at": "2026-11-14T19:18:07.515000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 8,
+          "type": "tool_result",
+          "payload": {
+            "tool": "list_files",
+            "evidenceId": "ev_c7edbde789",
+            "summary": "7 files"
+          },
+          "at": "2026-11-14T19:18:07.610000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 9,
+          "type": "tool_call",
+          "payload": {
+            "tool": "search_code",
+            "args": {
+              "query": "def "
+            }
+          },
+          "at": "2026-11-14T19:18:09.065000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 10,
+          "type": "tool_result",
+          "payload": {
+            "tool": "search_code",
+            "evidenceId": "ev_3c10f7e41d",
+            "summary": "searched \"def \": 10 hits"
+          },
+          "at": "2026-11-14T19:18:09.161000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 11,
+          "type": "patch_proposed",
+          "payload": {
+            "attempt": 1,
+            "patch": {
+              "path": "app/webhooks.py",
+              "newContent": "\"\"\"Payment posting endpoint for provider notifications.\"\"\"\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\nfrom pymongo.errors import DuplicateKeyError\n\nfrom . import ledger\nfrom .db import get_db\n\nrouter = APIRouter()\n\n\nclass PostedPayment(BaseModel):\n    id: str\n    customer_id: str\n    amount: int\n\n\n@router.post(\"/webhooks/provider\")\ndef on_payment_posted(posted: PostedPayment) -> dict:\n    collection = get_db()[\"payments\"]\n    record = {\n        \"provider_event_id\": posted.id,\n        \"customer_id\": posted.customer_id,\n        \"amount\": posted.amount,\n    }\n    try:\n        collection.insert_one(record)\n    except DuplicateKeyError:\n        # Already processed: don't credit again, record the replay.\n        ledger.mark_replayed(posted.id)\n        return {\"ok\": True, \"duplicate\": True}\n    ledger.credit(posted.customer_id, posted.amount, posted.id)\n    return {\"ok\": True}\n"
+            },
+            "fromMemory": {
+              "memoryId": "mem_5e9fb7d683fb",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "fromMemoryLines": [
+              5,
+              27,
+              29,
+              31,
+              32
+            ]
+          },
+          "at": "2026-11-14T19:18:12.769000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 12,
+          "type": "verification",
+          "payload": {
+            "attempt": 1,
+            "result": {
+              "runId": "verify_d8447b59",
+              "caseId": "B3",
+              "status": "passed",
+              "beforeFailed": true,
+              "afterPassed": true,
+              "tests": [
+                {
+                  "name": "test_single_payment_credited",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_reproduces",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_duplicate_event_single_effect",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_distinct_events_same_customer",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_unique_index_still_present",
+                  "passed": true,
+                  "detail": null
+                },
+                {
+                  "name": "test_replay_recorded_for_reconciliation",
+                  "passed": true,
+                  "detail": null
+                }
+              ],
+              "evidenceHashes": [
+                "cbfbc11e7e51979f734b61eeb01a0087b5234bc57ca251c7d9c6dba5e134c38c",
+                "73bb819192961cca613bc5baec7c8b35e16197cc6a37207f03478555a1f54f67",
+                "15cad7c3a90aad4238b72b2b8fc319937a54a29a29c6344e189a62643ec187a3"
+              ],
+              "durationMs": 3761,
+              "detail": null
+            }
+          },
+          "at": "2026-11-14T19:18:16.620000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 13,
+          "type": "memory_outcome",
+          "payload": {
+            "outcome": "renewed",
+            "memory": {
+              "memoryId": "mem_5e9fb7d683fb",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "message": "Memory proven again; its expiry was extended."
+          },
+          "at": "2026-11-14T19:18:17.240000Z"
+        },
+        {
+          "runId": "run_724e29fab5e1",
+          "seq": 14,
+          "type": "run_finished",
+          "payload": {
+            "outcome": "verified",
+            "attempt": 1,
+            "seenBefore": true,
+            "testsPassed": 6,
+            "testsTotal": 6,
+            "memoryUsed": {
+              "memoryId": "mem_5e9fb7d683fb",
+              "version": 1,
+              "ownerTeamId": "team-payments",
+              "match": "strong"
+            },
+            "summary": "Seen before. Fix verified on the first attempt, 6 tests pass. One memory used, owned by Payments."
+          },
+          "at": "2026-11-14T19:18:17.339000Z"
+        }
+      ],
+      "setup": {
+        "vectorIndexReady": true,
+        "earnMemoryId": "mem_5e9fb7d683fb",
+        "earnSearchable": true,
+        "earnLengths": {
+          "retrieval_text": 296,
+          "cause_and_resolution": 245,
+          "patch": 880,
+          "injected": 1125
+        },
+        "earnSeeded": false,
+        "memoriesInDb": 1,
+        "agentDeps": {
+          "available": true,
+          "runner": "LocalRunner",
+          "store": "AtlasMemoryStore",
+          "model": "claude-sonnet-5-5",
+          "revision": "e0a6e18",
+          "storeDb": "traceback_eval_1114191217_b3_real_1",
+          "runRepo": "MongoRunRepo",
+          "runRepoDb": "traceback_eval_1114191217_b3_real_1",
+          "expectedDb": "traceback_eval_1114191217_b3_real_1"
+        }
+      },
+      "invalidReasons": [],
+      "timedOut": false,
+      "cleanup": "dropped (collections)"
+    }
+  ]
+}
