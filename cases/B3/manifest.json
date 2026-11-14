@@ -1,0 +1,28 @@
+{
+  "caseId": "B3",
+  "title": "Posted payments rejected when the provider repeats a notification",
+  "teamId": "team-payments",
+  "repositoryId": "payments-webhooks",
+  "fixturePath": "fixture_app/payments-webhooks",
+  "request": {
+    "method": "POST",
+    "path": "/webhooks/provider",
+    "report": "Some payment postings from the provider are being rejected with server errors. It looks like the provider repeats notifications it thinks we missed.",
+    "deliveries": [
+      {"id": "evt_7001", "customer_id": "cus_91", "amount": 9900},
+      {"id": "evt_7001", "customer_id": "cus_91", "amount": 9900}
+    ]
+  },
+  "logs": "2026-11-14T07:30:18Z INFO  posting payment evt_7001 customer=cus_91 amount=9900 -> ok\n2026-11-14T07:30:29Z INFO  provider repeated notification evt_7001 (no ack within 10s)\n2026-11-14T07:30:29Z ERROR payment posting failed for evt_7001\nTraceback (most recent call last):\n  File \"app/webhooks.py\", line 26, in on_payment_posted\n    collection.insert_one(record)\npymongo.errors.DuplicateKeyError: E11000 duplicate key error collection: fixture_payments.payments index: provider_event_id_1 dup key: { provider_event_id: \"evt_7001\" }\n2026-11-14T07:30:29Z INFO  responded 500 to provider for evt_7001",
+  "patchableFiles": ["app/webhooks.py"],
+  "reproductionTest": "test_duplicate_event_reproduces",
+  "testIds": [
+    "test_single_payment_credited",
+    "test_duplicate_event_reproduces",
+    "test_duplicate_event_single_effect",
+    "test_distinct_events_same_customer",
+    "test_unique_index_still_present",
+    "test_replay_recorded_for_reconciliation"
+  ],
+  "revision": null
+}

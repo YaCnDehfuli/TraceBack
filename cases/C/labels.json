@@ -1,0 +1,10 @@
+{
+  "caseId": "C",
+  "expectedCause": "The unique index on the payments collection is on customer_id instead of provider_event_id, so two different payments from the same customer collide and raise E11000.",
+  "memoryShouldApply": false,
+  "expectedOutcome": "escalated",
+  "conditions": {"dupKeyField": "customer_id", "sameEventIdOnBothDeliveries": false},
+  "expectedFix": "Move the unique index from customer_id to provider_event_id. That change lives in app/db.py, which is outside the patchable file (app/webhooks.py), so the right outcome is to escalate to a human, not to apply the remembered 'treat a duplicate as a replay' fix.",
+  "referenceFix": null,
+  "notes": "Look-alike for case A (also E11000 on payments) but the duplicate key is customer_id and the event IDs differ. The remembered fix must be refused; applying cases/A/reference/webhooks.py fails verification. Hidden from the agent. Read only by evals/run_ablation.py."
+}

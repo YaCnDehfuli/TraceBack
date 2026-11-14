@@ -1,0 +1,10 @@
+{
+  "caseId": "B3",
+  "expectedCause": "Same mechanism as case A with different wording; the collection is held in a local variable and a repeated notification is inserted again, so the unique index on provider_event_id raises E11000.",
+  "memoryShouldApply": true,
+  "expectedOutcome": "verified",
+  "conditions": {"dupKeyField": "provider_event_id", "sameEventIdOnBothDeliveries": true},
+  "expectedFix": "Catch DuplicateKeyError around collection.insert_one, keep the unique index, don't credit again, call ledger.mark_replayed(posted.id), return 200.",
+  "referenceFix": "cases/B3/reference/webhooks.py",
+  "notes": "Experiment repeat of B. Hidden from the agent. Read only by evals/run_ablation.py."
+}

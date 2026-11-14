@@ -1,0 +1,28 @@
+{
+  "caseId": "D",
+  "title": "Gateway notification crashes on a redelivered event",
+  "teamId": "team-platform",
+  "repositoryId": "platform-webhooks",
+  "fixturePath": "fixture_app/platform-webhooks",
+  "request": {
+    "method": "POST",
+    "path": "/webhooks/provider",
+    "report": "Gateway notifications are failing with HTTP 500. The gateway console shows the same event delivered twice.",
+    "deliveries": [
+      {"id": "evt_4001", "customer_id": "acct_9", "amount": 3200},
+      {"id": "evt_4001", "customer_id": "acct_9", "amount": 3200}
+    ]
+  },
+  "logs": "2026-11-14T05:20:02Z INFO  POST /webhooks/provider event=evt_4001 status=200 duration_ms=10388\n2026-11-14T05:20:12Z INFO  POST /webhooks/provider event=evt_4001 (gateway retry 1)\n2026-11-14T05:20:12Z ERROR Exception in ASGI application\nTraceback (most recent call last):\n  File \"app/gateway.py\", line 20, in on_gateway_event\n    get_db().charges.insert_one(\npymongo.errors.DuplicateKeyError: E11000 duplicate key error collection: fixture_platform.charges index: gateway_event_id_1 dup key: { gateway_event_id: \"evt_4001\" }\n2026-11-14T05:20:12Z INFO  POST /webhooks/provider event=evt_4001 status=500",
+  "patchableFiles": ["app/gateway.py"],
+  "reproductionTest": "test_duplicate_event_reproduces",
+  "testIds": [
+    "test_single_payment_credited",
+    "test_duplicate_event_reproduces",
+    "test_duplicate_event_single_effect",
+    "test_distinct_events_same_customer",
+    "test_unique_index_still_present",
+    "test_replay_recorded_for_reconciliation"
+  ],
+  "revision": null
+}
