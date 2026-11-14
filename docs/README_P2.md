@@ -27,15 +27,16 @@ A memory in Traceback is **one proven fix**: what the incident looked like, why 
 
 ### Why vector search, with so few memories?
 
-The demo database holds the earned memory plus **20 labelled distractor memories** across both teams (other bug families, `seeded: true`), including deliberate near misses: a webhook signature failure, a webhook relay timeout, a missing index. Recall drops vector hits below a **score cutoff of 0.83**, measured with `voyage-4-lite` against every case's real recall query:
+The demo database holds the earned memory plus **20 labelled distractor memories** across both teams (other bug families, `seeded: true`), including deliberate near misses: a webhook signature failure, a webhook relay timeout, a missing index. Recall drops vector hits below a **score cutoff of 0.83**. Measured with `voyage-4-lite` on `main` `45afa59` (recall embeds code-derived facts only, #60) against every case's real recall query. Scores are Atlas `vectorSearchScore` = (1 + cosine) / 2, not raw cosine:
 
-| | Score |
-| --- | --- |
-| Real memory, cases A, B, B2, B3, C, D, P | 0.899–0.945 |
-| Real memory, the generic Fence query | 0.867 |
-| **Best distractor, any case** | **0.791** |
+| | Atlas score | Label |
+| --- | --- | --- |
+| True repeats: cases A, B, B2, B3, P | 0.952 | match: strong |
+| Look-alikes: case D 0.939, case C 0.927 | 0.927–0.939 | match: weak |
+| Real memory, the generic Fence query | 0.897 | match: weak |
+| **Best distractor, any case** | **0.778** | below the cutoff |
 
-Exact signature matches bypass the cutoff, so a look-alike (case C) is still found and then refused by its conditions. `tests/memory/test_distractors.py` re-checks the separation for every case.
+"match: strong" means a vector score of at least 0.945. An exact signature match (same error code and operation) bypasses the cutoff, so a look-alike (case C) is still found and then refused by its conditions, but a signature match alone never makes a memory "strong" (#62). `tests/memory/test_distractors.py` and `tests/memory/test_match_labels.py` re-check this for every case.
 
 ### What you see on screen (`web/memory.js`)
 
