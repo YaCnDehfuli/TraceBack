@@ -1,13 +1,13 @@
 """Database access for the payments webhook service."""
 
 import os
-from functools import lru_cache
+from functools import cache
 
 from pymongo import ASCENDING, MongoClient
 from pymongo.database import Database
 
 
-@lru_cache(maxsize=None)
+@cache
 def _client(uri: str) -> MongoClient:
     return MongoClient(uri, serverSelectionTimeoutMS=3000)
 
