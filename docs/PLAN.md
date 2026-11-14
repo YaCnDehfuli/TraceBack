@@ -2,7 +2,7 @@
 
 Agents in Context Toronto · Saturday, November 14, 2026 · Challenge 2: Memory You Can Govern
 
-**Version 3.3.** Checked against the official participant guide and resource guide, and revised after an independent review of novelty, feasibility, usability and appeal. The ElevenLabs voice agent is now part of the core plan. **Every feature is ranked by priority, so we can stop at any point and still ship a working demo.**
+**Version 3.4.** Checked against the official participant guide and resource guide, and revised after an independent review of novelty, feasibility, usability and appeal. The ElevenLabs voice agent is now part of the core plan. **Every feature is ranked by priority, so we can stop at any point and still ship a working demo.**
 
 This replaces sections 2, 13, 15 and 17 of the team guide. The design, glossary, setup and memory rules in the guide still apply, **except where section 4 of this plan corrects them.** Where they disagree, this plan wins.
 
@@ -174,7 +174,7 @@ The problem statement says memory must be "corrected or forgotten". Minimal vers
 
 | # | Rung | Task | Done when |
 | --- | --- | --- | --- |
-| P1-0 | R0 | After 10:45, push the skeleton: folders, `.gitignore` **with `.env`**, `.env.example`, `pyproject.toml`, `scripts/demo.py` stub, `.github/CODEOWNERS` (9.4). Draft and merge the contracts. Make one LLM call with a tool. Check in before 11:00; redeem the ElevenLabs coupon; watch Discord `#announcements`. | P2 and P3 can branch from `main` |
+| P1-0 | R0 | After 10:45, push the skeleton: folders, `.gitignore` **with `.env`**, `.gitattributes` with `* text=auto eol=lf` (stops Windows line endings from turning every edit into a whole-file conflict), `.env.example`, `pyproject.toml`, `scripts/demo.py` stub, `.github/CODEOWNERS` (9.4). On GitHub, add a branch rule on `main`: "Require a pull request before merging" (1 approval), so nobody pushes to `main` by accident. Draft and merge the contracts. Make one LLM call with a tool. Check in before 11:00; redeem the ElevenLabs coupon; watch Discord `#announcements`. | P2 and P3 can branch from `main` |
 | P1-1 | R1 | `scripts/skeleton.py`: reference fix → `runner.verify()` → `promote()` → `recall()` under both teams. No LLM and no API yet: it calls P2's and P3's code directly. | Payments finds 1, Platform finds 0 |
 | P1-2 | R2 | Agent loop, run from the command line (`uv run python -m agent.run --case B --team payments`): budgets (8 tool calls, 2 fix attempts, 2 minutes); file tools with path checks; E11000 parsing and **condition checks in code** (4.2) right after recall; on a verified fix, call `promote()` (new memory) or `renew` (reused memory). Each step is written as a `RunEvent`. | A full run prints its events |
 | P1-3 | R2 | Case A and case B with the real LLM. **12:45 decision:** free-form fixes, or the fallback where the agent chooses among candidate fixes. **By 13:00:** three no-memory runs of case B to calibrate (4.1). | Earn and Reuse work end to end |
@@ -184,7 +184,7 @@ The problem statement says memory must be "corrected or forgotten". Minimal vers
 | P1-7 | R6 | Refuse: report `near_miss` to memory with the failing condition; a reason event, "Not applied: duplicate key is `customer_id`; this memory requires `provider_event_id`"; a copyable escalation summary. (If conditions held but the fix failed, report `dispute`.) | Case C shows the sentence |
 | P1-8 | R9 | **Voice agent "Traceback On-Call"** (section 6.4). Create the agent in ElevenLabs. Build `web/voice.js` with three client tools: `start_case`, `get_run_status`, `find_memories`. Add a spoken result when a run ends. | Sam starts Reuse by voice and hears the result; the Platform spoof is refused |
 | P1-9 | R10 | Memory switch `?memory=off\|placebo\|real`; `evals/placebo_memories.json`; `evals/run_ablation.py` running B, B2, B3 × 3 modes in parallel, scored against `cases/*/labels.json`, written to `evals/results/results.md` as raw counts. Put the table on **one results slide** for the demo. | Results slide exists |
-| P1-10 | Ship | Assemble the README at 16:05; final commit and tag (section 10). | Tag `submission` pushed |
+| P1-10 | Ship | Assemble the README at 16:05; tag the submission (section 10). | Tag `submission` pushed |
 
 ### 6.2 P2: Memory and Atlas
 
@@ -207,7 +207,7 @@ The problem statement says memory must be "corrected or forgotten". Minimal vers
 
 | # | Rung | Task | Done when |
 | --- | --- | --- | --- |
-| P3-0 | R0 | Local fixture database: `docker run -d --name fixture-mongo -p 27018:27017 mongo` (Docker Desktop on Windows). Prove `pytest` runs against a tiny FastAPI app. | Test passes locally |
+| P3-0 | R0 | Local fixture database. **On Windows without Docker** (fastest): `winget install --id MongoDB.Server -e`, which runs as a service on port 27017, so `FIXTURE_MONGODB_URI=mongodb://localhost:27017`. With Docker: `docker run -d --name fixture-mongo -p 27018:27017 mongo`. Prove `pytest` runs against a tiny FastAPI app. | Test passes locally |
 | P3-1 | R1 | `fixture_app/payments-webhooks/`: buggy handler, ledger with `mark_replayed()`, unique index on `provider_event_id`, `docs/RUNBOOK.md` (4.1). | App reproduces E11000 |
 | P3-2 | R1 | `trusted_tests/`: the five tests from guide 10.2 **plus `test_replay_recorded_for_reconciliation`**; a reference fix. If time is short, write the reproduction, single-effect and reconciliation tests first (enough for R1–R2), and the rest before R6. | Tests fail on the bug and pass on the reference fix |
 | P3-3 | R1 | `runner/`: temp copy, allowlisted file replacement, `pytest` in a separate process with a timeout and no secrets; returns the agreed result; cleans up. | Skeleton script passes |
@@ -357,6 +357,39 @@ Commit from **your own GitHub account**, so the history shows three real contrib
 - `main` must always run `uv run python scripts/demo.py`. **Never merge a half-done item** (section 5.1).
 - Paired on something? Add a `Co-authored-by: Name <email>` line.
 
+**The commands for every task:**
+
+1. Start from the latest `main`, on a new branch named after the task:
+
+   ```bash
+   git checkout main
+   git pull
+   git checkout -b p2/P2-6-forget
+   ```
+
+2. Commit often. Check that `.env` isn't listed before adding files:
+
+   ```bash
+   git status
+   git add memory/lifecycle.py tests/memory/test_lifecycle.py
+   git commit -m "Forget with tombstone and per-memory secret"
+   git push -u origin p2/P2-6-forget
+   ```
+
+3. On GitHub, open a pull request with two lines: what it does, and how you tested it. A teammate reviews it, then **Squash and merge**, and delete the branch.
+4. Before the next task, go back to `main`:
+
+   ```bash
+   git checkout main
+   git pull
+   ```
+
+5. If a teammate merged something you need while you're mid-task, bring it into your branch:
+
+   ```bash
+   git merge main
+   ```
+
 ### 9.3 Avoiding conflicts
 
 | Shared thing | Rule |
@@ -366,6 +399,9 @@ Commit from **your own GitHub account**, so the history shows three real contrib
 | `web/` | P3 owns it, except `web/memory.js` (P2) and `web/voice.js` (P1). They meet only at the hooks in `app.js` (section 6, contracts). |
 | `README.md` | Each person writes only their own section; merged in the order P2, P3, P1 |
 | `.env` | **Never committed.** Run `git status` before each commit. If a secret is pushed, tell P2 at once; replace the key. |
+| Your branch vs `main` | Run `git merge main` on your branch every hour. Small merges are easy; one big merge at 15:30 isn't. |
+| Line endings (Windows vs Mac) | `.gitattributes` with `* text=auto eol=lf`, added by P1 in setup. Without it, one Windows save can make a whole file conflict. |
+| Pushing to `main` directly | Blocked by the GitHub branch rule P1 adds in setup. Everything reaches `main` through a reviewed PR, including the README and last-minute fixes. |
 
 ### 9.4 CODEOWNERS (`.github/CODEOWNERS`): one path per line
 
@@ -395,6 +431,31 @@ Commit from **your own GitHub account**, so the history shows three real contrib
 - **The last matching line wins**, so `/web/memory.js` and `/web/voice.js` must stay after `/web/`.
 - Without branch protection, CODEOWNERS only requests reviewers; it doesn't block merges. That's fine for today.
 
+### 9.5 When something goes wrong
+
+**First rule: stuck for 10 minutes? Say so in team chat.** Never force-push `main`, and never delete someone else's work to make a conflict go away.
+
+| Situation | What to do |
+| --- | --- |
+| **Merge conflict in your own files** | `git status` lists the files. Open each one (VS Code shows "Accept Current / Incoming / Both" buttons), keep the right version (often both), and remove the `<<<<<<<` `=======` `>>>>>>>` markers. Then `git add <file>` and `git commit -m "Merge main into <your branch>"`. Run the tests before pushing. |
+| **Conflict in a teammate's folder** | Stop. Run `git merge --abort` to go back to before the merge, and ask the folder's owner. They resolve it. |
+| **Conflict in `uv.lock` / `pyproject.toml`** | Take `main`'s versions with `git checkout --theirs uv.lock pyproject.toml` (during `git merge main`, "theirs" means `main`). Rerun `uv add <your package>`, then `git add uv.lock pyproject.toml` and commit. |
+| **Conflict in `contracts/`** | Stop and post in chat. P1 decides within 5 minutes; then everyone merges `main`. |
+| **Merge got messy halfway** | `git merge --abort` puts everything back. Try again, or ask. |
+| **You committed on `main` by accident (not pushed)** | Save it on a branch, `git branch p2/rescue`; move `main` back, `git reset --hard origin/main`; continue with `git checkout p2/rescue` and open a PR from it. |
+| **Undo your last commit (not pushed yet)** | `git reset --soft HEAD~1`: the commit is undone, your changes stay. |
+| **A merged PR broke `main`** | On GitHub, open the merged PR and click **Revert**, then merge that revert PR. Fix it on a new branch. Don't force-push. |
+| **A PR touches files it shouldn't** | Put those files back to `main`'s version on your branch: `git checkout main -- <path>`, then commit and push. |
+| **A secret was pushed** | Tell P2 **immediately**. P2 replaces the key or password (Atlas user password, Voyage, LLM, ElevenLabs). The repo is public, so assume the old key is already copied; deleting the commit isn't enough. |
+| **Git opens a strange editor (Vim) for a merge message** | Type `:wq` and press Enter. To avoid it, always pass `-m "message"`, or run `git config --global core.editor "code --wait"`. |
+| **Your branch is far behind `main`** | Run `git merge main` on your branch now and every hour. Small merges are easy; one big merge at 15:30 isn't. |
+
+**People conflicts:**
+- **In your own folder,** you decide.
+- **Contracts and anything shared,** P1 decides within 5 minutes. Arguing past that costs more than either option.
+- **Waiting on a teammate's code?** Build against the fakes in `contracts/fakes.py` and swap in the real code when it's merged.
+- **Behind at a checkpoint?** Free people help whoever owns the blocking task (5.1) before starting anything new.
+
 ---
 
 ## 10. Wrapping up: final commit and submission
@@ -404,11 +465,11 @@ These steps start at **15:45**, or earlier if we decide to stop at a lower rung.
 | Time | Who | What |
 | --- | --- | --- |
 | **15:45** | All | **Stop.** Merge any finished item; leave unfinished ones on their branches. From now on, only fix PRs, each reviewed. |
-| 15:45 | P1 | Push the README skeleton: story and tagline, the five verbs, architecture, **Built today**, results with raw counts (if R10), governance, the ElevenLabs voice agent (if R9), limits (synthetic incidents, demo keys, seeded distractors), team credits. **Describe only what is merged.** |
+| 15:45 | P1 | Merge a quick PR with the README skeleton (headings only, one per owner), approved within 2 minutes: story and tagline, the five verbs, architecture, **Built today**, results with raw counts (if R10), governance, the ElevenLabs voice agent (if R9), limits (synthetic incidents, demo keys, seeded distractors), team credits. **Describe only what is merged.** |
 | 15:45–16:05 | Each | Write **your own README section** in your own PR; merge order P2, P3, P1. |
 | 15:45–16:05 | P3 | Cut the **1-minute video** from the latest backup: Story with Sam's spoken report → Reuse with the highlighted line and the spoken result → Fence → Forget → results. Say "everything shown was built today." Check that the audio plays. |
 | 16:05 | P2 | **Secrets check** (commands below). Anything found: replace that key or password now. |
-| 16:10 | P1 | **Final commit** `Submission: Traceback v1`, then `git tag submission` and `git push origin main --tags`. |
+| 16:10 | P1 | **Tag the submission.** Once all README PRs are merged: `git checkout main`, `git pull`, `git tag submission`, `git push origin submission`. (`main` is protected, so there's no direct final commit; the last merged PR is the final commit.) |
 | 16:10–16:20 | P3 | **Fresh-clone test:** check in a logged-out browser that the repo is public; clone into a new folder; run `uv sync`, `uv run python scripts/demo_reset.py`, `uv run python scripts/demo.py`. |
 | 16:20 | P3 | Upload the video (unlisted link); test playback from another laptop. |
 | **16:30** | P3 | **Submit** the draft prepared at 15:00 with the video link. Confirm P1 and P2 are on it. Screenshot the confirmation into team chat. |
