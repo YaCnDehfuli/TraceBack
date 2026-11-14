@@ -1,7 +1,7 @@
 """AtlasMemoryStore: the real MemoryStore (contracts/interfaces.py). The only code that writes memories.
 
-Done (P2-2): promote, is_searchable, recall, search, unscoped_search.
-Still to do: record_use, forget, expire (P2-6); correct (P2-7).
+Done: promote, is_searchable, recall, search, unscoped_search (P2-2); record_use (P2-6).
+Still to do: forget, expire (P2-6); correct (P2-7).
 
 Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 - recall: $vectorSearch pre-filter on tenantId, readableBy, status="active", expiresAt > now,
@@ -17,6 +17,7 @@ Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 
 from __future__ import annotations
 
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import Any
@@ -31,6 +32,7 @@ from contracts.models import (
     MemoryCandidate,
     MemoryCard,
     MemoryDraft,
+    MemoryOutcome,
     MemoryUseDecision,
     Observations,
     Principal,
@@ -129,7 +131,8 @@ class AtlasMemoryStore:
             "readableBy": [p.team_id],
             "repositoryId": d.repository_id,
             "status": "active",
-            "title": title or d.retrieval_text.split(";")[0].split(".")[0][:80],
+            # Describe the FIX, not the symptom (issue #17): first clause of the resolution.
+            "title": title or re.split(r"[:;.]", d.resolution_summary or d.retrieval_text)[0].strip()[:80],
             "retrievalText": d.retrieval_text,
             "signature": d.signature,
             "confirmedCause": d.confirmed_cause,
@@ -190,8 +193,87 @@ class AtlasMemoryStore:
 
     def record_use(
         self, principal: Principal, memory_id: str, version: int, run_id: str, decision: MemoryUseDecision
-    ) -> None:
-        raise NotImplementedError("P2-6: record_use")
+    ) -> MemoryOutcome | None:
+        """Record what the agent did with a recalled memory. The store decides the governance outcome
+        (guide 8.4); the agent never does. Returns that outcome for the run's memory_outcome event:
+
+          rejected / stale                                  -> "near_miss" (memory stays active)
+          used, no verification yet                         -> None   (audit "used")
+          used, verified                                    -> "renewed" (expiry extended, capped)
+          used, conditions all held, verification failed    -> "disputed" (paused: not searchable)
+          used, verification inconclusive (our infra broke) -> None   (nothing blamed on the memory)
+
+        Never raises for a memory that vanished mid-run (forgotten, expired, other team): it logs
+        `use_ignored` and returns None, so a run is never crashed by governance.
+        """
+        p, d = principal, decision
+        actor = {"type": "agent", "id": f"run:{run_id}"}
+        details: dict[str, Any] = {
+            "decision": d.decision,
+            "preconditions": [r.model_dump(by_alias=True) for r in d.preconditions],
+        }
+        if d.verification is not None:
+            v = d.verification
+            details["verification"] = {"runId": v.run_id, "status": v.status, "testsPassed": v.tests_passed,
+                                       "testsTotal": len(v.tests)}
+
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(p)}, {"embedding": 0})
+        if doc is None:
+            audit.log(self.db, tenant_id=p.tenant_id, event="use_ignored", actor=actor, memory_id=memory_id,
+                      version=version, run_id=run_id, reason="memory no longer readable", details=details)
+            return None
+
+        def log(event: str, reason: str | None = d.reason, extra: dict | None = None) -> None:
+            audit.log(self.db, tenant_id=p.tenant_id, event=event, actor=actor, memory_id=memory_id,
+                      version=doc["version"], run_id=run_id, reason=reason,
+                      details={**details, **(extra or {})}, content_hash=audit.content_hash(doc))
+
+        # Not applied: its conditions didn't hold here (or it was stale). Not the memory's fault.
+        if d.decision in ("rejected", "stale"):
+            log("near_miss")
+            return "near_miss"
+
+        # decision == "used"
+        if d.verification is None or d.verification.status == "inconclusive":
+            log("used")
+            return None
+
+        if d.verification.verified:
+            log("used")
+            policy = get_policy(self.db, doc["tenantId"], doc["ownerTeamId"])
+            if not policy["renewOnReverify"]:
+                return None
+            now = utc_now()
+            new_exp, new_purge = expiry_for(policy, doc["createdAt"], now)
+            # Only a memory that is STILL active and unexpired is renewed, checked atomically in the
+            # update: a run in flight must never undo an admin's "expire now", a dispute or a revoke.
+            res = self.memories.update_one(
+                {"_id": memory_id, "status": "active", "expiresAt": {"$gt": now, "$lt": new_exp}},
+                {"$set": {"expiresAt": new_exp, "purgeAt": new_purge}},
+            )
+            if res.modified_count:
+                log("renewed", extra={"from": doc["expiresAt"], "expiresAt": new_exp, "purgeAt": new_purge})
+                return "renewed"
+            live = self.memories.find_one({"_id": memory_id, "status": "active", "expiresAt": {"$gt": now}},
+                                          {"_id": 1})
+            if live:  # still valid, already at its max lifetime: nothing to extend
+                log("renewed", extra={"expiresAt": doc["expiresAt"], "capped": True})
+                return "renewed"
+            log("not_renewed", reason="expired, disputed or revoked while the run was in flight")
+            return None
+
+        # Applied and verification failed.
+        held = bool(d.preconditions) and all(r.held is True for r in d.preconditions)
+        if not held:
+            # Conditions weren't all confirmed, so the failure isn't evidence against the memory.
+            log("used", extra={"verificationFailed": True})
+            return None
+        res = self.memories.update_one({"_id": memory_id, "status": "active"}, {"$set": {"status": "disputed"}})
+        if not res.modified_count:  # already disputed / revoked / superseded by someone else
+            log("used", extra={"verificationFailed": True, "statusAlready": doc["status"]})
+            return None
+        log("disputed", reason=d.reason or "conditions held but the remembered fix failed verification")
+        return "disputed"
 
     # ------------------------------------------------------------------ read
 
@@ -278,6 +360,35 @@ class AtlasMemoryStore:
         audit.log(self.db, tenant_id=principal.tenant_id, event="unscoped_compared", actor=_actor(principal),
                   details={"memoryIds": [h["_id"] for h in hits]})
         return hits
+
+    # ------------------------------------------------------------------ cards (UI)
+
+    @staticmethod
+    def readable(p: Principal) -> dict:
+        """Who may SEE a memory's card: same tenant and team in readableBy, any status or expiry,
+        so the UI can show expired / superseded states. Searching still uses scope()."""
+        return {"tenantId": p.tenant_id, "readableBy": {"$in": [p.team_id]}}
+
+    def list_cards(self, principal: Principal, limit: int = 20) -> list[MemoryCard]:
+        """GET /memories: the caller's team's memories, earned ones first, then seeded."""
+        docs = list(
+            self.memories.find(self.readable(principal), {"embedding": 0, "hmacSecret": 0})
+            .sort([("seeded", 1), ("createdAt", -1)])
+            .limit(limit)
+        )
+        if docs:
+            audit.log(self.db, tenant_id=principal.tenant_id, event="listed", actor=_actor(principal),
+                      details={"memoryIds": [d["_id"] for d in docs]})
+        return [self.to_card(d) for d in docs]
+
+    def get_card(self, principal: Principal, memory_id: str) -> MemoryCard | None:
+        """GET /memories/{id}. None if missing OR not readable, so other teams can't probe for ids."""
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(principal)}, {"embedding": 0})
+        if not doc:
+            return None
+        audit.log(self.db, tenant_id=principal.tenant_id, event="viewed", actor=_actor(principal),
+                  memory_id=memory_id, version=doc["version"], content_hash=audit.content_hash(doc))
+        return self.to_card(doc)
 
     # ------------------------------------------------------------------ shapes
 
