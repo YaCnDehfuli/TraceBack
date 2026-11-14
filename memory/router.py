@@ -34,15 +34,22 @@ def list_memories(principal: CurrentPrincipal) -> list[MemoryCard]:
 
 @router.get("/search", response_model=MemorySearchResult)
 def search_memories(q: str, principal: CurrentPrincipal) -> MemorySearchResult:
-    """The same scoped search as recall, for the caller's team. Also used by the voice agent (metadata only)."""
-    raise _todo("P2-5")
+    """The same scoped search as recall, for the caller's team (metadata-only cards).
+    `filter` is the exact pre-filter that ran inside $vectorSearch, printed in the Fence view."""
+    s = store()
+    cards = s.search(principal, q)
+    return MemorySearchResult(query=q, team_id=principal.team_id, count=len(cards), memories=cards,
+                              filter=s.printable_scope(principal))
 
 
 @router.get("/compare-unscoped", response_model=MemorySearchResult)
 def compare_unscoped(q: str, principal: AdminPrincipal) -> MemorySearchResult:
     """Admin only, for the Fence view: what the search WOULD return without the team filter.
-    Never given to the agent or the voice agent."""
-    raise _todo("P2-5")
+    Other teams' memories come back redacted (owner and match only). Never given to the agent."""
+    s = store()
+    cards = s.unscoped_cards(principal, q)
+    shown = {k: v for k, v in s.printable_scope(principal).items() if k != "readableBy"}
+    return MemorySearchResult(query=q, team_id=principal.team_id, count=len(cards), memories=cards, filter=shown)
 
 
 @router.get("/{memory_id}", response_model=MemoryCard)

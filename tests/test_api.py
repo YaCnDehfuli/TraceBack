@@ -37,7 +37,7 @@ def test_admin_routes_refuse_engineers(client):
 def test_stubs_answer_501(client):
     key = {"X-API-Key": "test-payments-eng"}
     assert client.get("/runs/run_1", headers=key).status_code == 501
-    assert client.get("/memories/search", params={"q": "duplicate"}, headers=key).status_code == 501
+    # /memories/search is implemented since P2-5 (covered by tests/memory/test_fence.py).
 
 
 def test_sample_events_endpoint(client):
