@@ -437,6 +437,28 @@ class AtlasMemoryStore:
             "forgotten": Tombstone(forgotten_by=actor["id"], reason=reason.strip(), at=now),
         })
 
+    def forget_for_reset(self, tenant_id: str, repositories: list[str], reason: str) -> dict:
+        """Demo/dev reset only (#67): forget every NON-seeded memory (seeded absent or false) in the given
+        repositories of one tenant, e.g. memories promoted by earlier agent runs, so a reset can't leave
+        stale duplicates recallable. Same path as forget(): every version of each lineage is deleted and a
+        content-free tombstone is written per version, recorded as done by policy:demo-reset (no human
+        admin is impersonated). Other repositories and seeded memories are untouched.
+        Returns {"lineages": n, "versions": n}."""
+        scope = {"tenantId": tenant_id, "repositoryId": {"$in": repositories}, "seeded": {"$ne": True}}
+        lineages = self.memories.distinct("lineageId", scope)
+        if not lineages:
+            return {"lineages": 0, "versions": 0}
+        versions = list(self.memories.find({"lineageId": {"$in": lineages}}, {"_id": 1, "version": 1, "lineageId": 1}))
+        self.memories.delete_many({"lineageId": {"$in": lineages}})
+        actor = {"type": "policy", "id": "demo-reset"}
+        audit.log_many(self.db, [
+            {"tenantId": tenant_id, "memoryId": v["_id"], "version": v["version"], "event": "forgotten",
+             "actor": actor, "runId": None, "reason": reason, "contentHash": None,
+             "details": {"lineageId": v["lineageId"], "reset": True}}
+            for v in versions
+        ])
+        return {"lineages": len(lineages), "versions": len(versions)}
+
     def expire_now(self, principal: Principal, memory_id: str, reason: str) -> MemoryCard:
         """Expire immediately: recall stops returning it at once (the search filter checks expiresAt);
         the TTL index deletes it after the policy's purge grace."""
