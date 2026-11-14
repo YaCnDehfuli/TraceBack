@@ -17,6 +17,7 @@ Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 
 from __future__ import annotations
 
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import Any
@@ -130,7 +131,8 @@ class AtlasMemoryStore:
             "readableBy": [p.team_id],
             "repositoryId": d.repository_id,
             "status": "active",
-            "title": title or d.retrieval_text.split(";")[0].split(".")[0][:80],
+            # Describe the FIX, not the symptom (issue #17): first clause of the resolution.
+            "title": title or re.split(r"[:;.]", d.resolution_summary or d.retrieval_text)[0].strip()[:80],
             "retrievalText": d.retrieval_text,
             "signature": d.signature,
             "confirmedCause": d.confirmed_cause,
