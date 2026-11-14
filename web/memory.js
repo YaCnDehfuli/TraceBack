@@ -110,7 +110,7 @@
     ownerChip.style.background = owner.color;
     chips.appendChild(ownerChip);
     if (STATUS_LABEL[memory.status]) chips.appendChild(el("span", "tb-chip tb-warn", STATUS_LABEL[memory.status]));
-    if (memory.stale) chips.appendChild(el("span", "tb-chip tb-warn", "Stale: code changed since this was proven"));
+    if (memory.stale) chips.appendChild(staleChip());
     // GET /memories/{id} has no match; during a run app.js passes the recall's match in context.
     const match = memory.match || (context && context.match);
     if (match) chips.appendChild(el("span", "tb-chip tb-plain", `match: ${match}`));
@@ -286,6 +286,28 @@
     refreshAdminDrawers();
   }
 
+  // ---------------------------------------------------------------- staleness (R12)
+  // Every 5 s, ask whether the code each visible memory was proven on has changed, and flip its
+  // "Stale" chip live (edit one line of webhooks.py and the card flips). Unaudited endpoint.
+  function staleChip() {
+    return el("span", "tb-chip tb-warn tb-stale", "Stale: code changed since this was proven");
+  }
+
+  async function refreshStaleness() {
+    const cards = [...document.querySelectorAll(".tb-card[data-memory-id]")].filter((c) => c.isConnected);
+    for (const card of cards) {
+      try {
+        const r = await window.traceback.api(`/memories/${encodeURIComponent(card.dataset.memoryId)}/stale`);
+        const chip = card.querySelector(".tb-stale");
+        if (r.stale && !chip) card.querySelector(".tb-chips")?.appendChild(staleChip());
+        if (!r.stale && chip) chip.remove();
+        if (card._memory) card._memory.stale = r.stale;
+      } catch (_) {
+        // not readable under the current key, or the API is down: leave the card as it is
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- the panel
   // Idle state only: when no run is on screen, #memory-slot lists the caller's team's memories.
   // During a run, app.js (P3) owns the slot and calls renderMemoryCard for the run's memory;
@@ -456,6 +478,7 @@
 
   injectStyles();
   setInterval(tick, 1000);
+  setInterval(refreshStaleness, 5000);
   document.addEventListener("DOMContentLoaded", () => {
     // app.js sets <body class="team-…"> on every identity change (the pill AND keys 4/5),
     // so watching the body class catches all of them.

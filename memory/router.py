@@ -63,6 +63,16 @@ def get_memory(memory_id: str, principal: CurrentPrincipal) -> MemoryCard:
     return card
 
 
+@router.get("/{memory_id}/stale")
+def memory_stale(memory_id: str, principal: CurrentPrincipal) -> dict:
+    """R12: has the code changed since this memory was proven? {stale, changedFiles}. Not audited,
+    so the card can poll it."""
+    result = store().staleness(principal, memory_id)
+    if result is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No memory with that id for your team.")
+    return result
+
+
 @router.get("/{memory_id}/audit")
 def memory_audit(memory_id: str, principal: AdminPrincipal) -> list[dict]:
     """Who read, used, changed or deleted this memory: every audit event of its lineage, oldest first.
