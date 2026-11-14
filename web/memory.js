@@ -315,7 +315,11 @@
   async function refreshMemories() {
     const slot = document.getElementById("memory-slot");
     if (!slot) return;
-    const ours = () => !slot.firstElementChild || slot.firstElementChild.classList.contains("tb-list");
+    // A run is on screen (app.js sets #run-panel[data-live] to live / replay / done): the slot belongs
+    // to the run, even when it is empty ("Nothing your team may see"). Never fill it then (#76).
+    const runOnScreen = () => !!document.getElementById("run-panel")?.dataset.live;
+    const ours = () => !runOnScreen() &&
+      (!slot.firstElementChild || slot.firstElementChild.classList.contains("tb-list"));
     if (!ours()) return;
     let list;
     try {
@@ -348,7 +352,9 @@
     head.style.color = t.color;
     const body = result.count
       ? el("ul", "tb-conds", ...result.memories.map((m) =>
-        el("li", "tb-cond", el("span", "tb-icon", "✓"), m.title, m.match ? el("span", "tb-muted", ` · ${m.match}`) : null)))
+        // No strong/weak here (#72): Fence is about who may SEE a memory, and its generic query scores
+        // differently from the incident's own recall, so a label would contradict the run view's match.
+        el("li", "tb-cond", el("span", "tb-icon", "✓"), m.title)))
       : el("p", "tb-muted", "Nothing your team may see.");
     return el("div", "tb-fence-col", head, body);
   }
