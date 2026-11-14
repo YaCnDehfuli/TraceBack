@@ -310,6 +310,7 @@ class RunFinishedPayload(Contract):
     tests_total: int = 0
     memory_used: MemoryRef | None = None
     summary: str  # one plain sentence, also what the voice agent may read out
+    escalation: str | None = None  # escalated / unresolved runs: a plain-text handoff a human can copy
 
 
 class ErrorPayload(Contract):

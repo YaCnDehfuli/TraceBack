@@ -110,7 +110,7 @@
     ownerChip.style.background = owner.color;
     chips.appendChild(ownerChip);
     if (STATUS_LABEL[memory.status]) chips.appendChild(el("span", "tb-chip tb-warn", STATUS_LABEL[memory.status]));
-    if (memory.stale) chips.appendChild(el("span", "tb-chip tb-warn", "Stale: code changed since this was proven"));
+    if (memory.stale) chips.appendChild(staleChip());
     // GET /memories/{id} has no match; during a run app.js passes the recall's match in context.
     const match = memory.match || (context && context.match);
     if (match) chips.appendChild(el("span", "tb-chip tb-plain", `match: ${match}`));
@@ -181,22 +181,54 @@
     reason.setAttribute("aria-label", "Reason");
     const expire = el("button", "tb-btn", "Expire now");
     const forget = el("button", "tb-btn tb-danger", "Forget");
+    // Correction (P2-7): add an exclusion -> a new version supersedes this one.
+    const exclude = el("input", "tb-reason");
+    exclude.type = "text";
+    exclude.placeholder = "Does not apply when… (correction)";
+    exclude.setAttribute("aria-label", "Exclusion to add");
+    const correct = el("button", "tb-btn", `Correct → v${memory.version + 1}`);
+    const historyBtn = el("button", "tb-btn tb-plain-btn", "History");
+    const history = el("ol", "tb-history");
     const msg = el("p", "tb-muted", "");
-    for (const b of [expire, forget]) { b.type = "button"; b.disabled = true; }
-    reason.addEventListener("input", () => { expire.disabled = forget.disabled = !reason.value.trim(); });
+    const canCorrect = memory.status === "active";
+    for (const b of [expire, forget, correct, historyBtn]) b.type = "button";
+    function sync() {
+      const r = !!reason.value.trim();
+      expire.disabled = forget.disabled = !r;
+      correct.disabled = !r || !exclude.value.trim();
+    }
+    reason.addEventListener("input", sync);
+    exclude.addEventListener("input", sync);
+    sync();
 
-    async function act(method, path, then) {
-      expire.disabled = forget.disabled = true;
+    async function act(method, path, then, extra = {}) {
+      expire.disabled = forget.disabled = correct.disabled = true;
       msg.textContent = "Working…";
       try {
-        const body = JSON.stringify({ reason: reason.value.trim() });
+        const body = JSON.stringify({ reason: reason.value.trim(), ...extra });
         then(await window.traceback.api(path, { method, body }));
       } catch (err) {
         msg.textContent = `Failed: ${err.message}`;
-        expire.disabled = forget.disabled = false;
+        sync();
       }
     }
     const id = encodeURIComponent(memory.memoryId);
+    correct.addEventListener("click", () => act("POST", `/memories/${id}/correct`, (v2) => {
+      card.replaceWith(renderMemoryCard(v2, {}));
+    }, { excludes: [exclude.value.trim()] }));
+    historyBtn.addEventListener("click", async () => {
+      if (history.childElementCount) { history.replaceChildren(); return; }
+      try {
+        const events = await window.traceback.api(`/memories/${id}/audit`);
+        history.replaceChildren(...events.map((e) => el("li", null,
+          el("strong", null, e.event.replaceAll("_", " ")),
+          ` · ${e.actor ? e.actor.id : ""} · ${new Date(e.at).toLocaleTimeString()}`,
+          e.version ? ` · v${e.version}` : "",
+          e.reason ? el("span", "tb-muted", ` · ${e.reason}`) : null)));
+      } catch (err) {
+        history.replaceChildren(el("li", "tb-muted", `History unavailable: ${err.message}`));
+      }
+    });
     expire.addEventListener("click", () => act("POST", `/memories/${id}/expire`, (updated) => {
       card.replaceWith(renderMemoryCard(updated, {}));
     }));
@@ -210,7 +242,9 @@
 
     card.appendChild(el("div", "tb-admin",
       el("div", "tb-label", `Admin · ${team(memory.ownerTeamId).name}`),
-      reason, el("div", "tb-admin-btns", expire, forget), msg));
+      reason, el("div", "tb-admin-btns", expire, forget),
+      canCorrect ? exclude : null, canCorrect ? el("div", "tb-admin-btns", correct) : null,
+      el("div", "tb-admin-btns", historyBtn), history, msg));
   }
 
   // After Forget: show that recall really can't find it any more (the store's re-read guard makes
@@ -250,6 +284,28 @@
   function tick() {
     document.querySelectorAll(".tb-expiry").forEach(updateExpiry);
     refreshAdminDrawers();
+  }
+
+  // ---------------------------------------------------------------- staleness (R12)
+  // Every 5 s, ask whether the code each visible memory was proven on has changed, and flip its
+  // "Stale" chip live (edit one line of webhooks.py and the card flips). Unaudited endpoint.
+  function staleChip() {
+    return el("span", "tb-chip tb-warn tb-stale", "Stale: code changed since this was proven");
+  }
+
+  async function refreshStaleness() {
+    const cards = [...document.querySelectorAll(".tb-card[data-memory-id]")].filter((c) => c.isConnected);
+    for (const card of cards) {
+      try {
+        const r = await window.traceback.api(`/memories/${encodeURIComponent(card.dataset.memoryId)}/stale`);
+        const chip = card.querySelector(".tb-stale");
+        if (r.stale && !chip) card.querySelector(".tb-chips")?.appendChild(staleChip());
+        if (!r.stale && chip) chip.remove();
+        if (card._memory) card._memory.stale = r.stale;
+      } catch (_) {
+        // not readable under the current key, or the API is down: leave the card as it is
+      }
+    }
   }
 
   // ---------------------------------------------------------------- the panel
@@ -331,6 +387,39 @@
     }
   }
 
+  // ---------------------------------------------------------------- refusal receipt (R11)
+  // "Memory refused: no proof." The fix failed verification, so Atlas's validator refused the write.
+  // Nothing was stored: the receipt shows only facts from the audit log (run, case, failing tests).
+  function renderRefusal(ev) {
+    const d = ev.details || {};
+    const failed = d.failedTests || [];
+    const card = el("div", "tb-card tb-refused",
+      el("div", "tb-label", "Memory write · refused by the database"),
+      el("div", "tb-title", "Memory refused: no proof."),
+      el("p", "tb-line tb-bad", `✗ Verification ${d.status || "failed"}: ` +
+        `${d.testsPassed ?? "?"}/${d.testsTotal ?? "?"} tests pass after the fix`),
+      failed.length ? el("div", "tb-block", el("div", "tb-label", "Failing"),
+        el("ul", "tb-conds", ...failed.map((t) => el("li", "tb-cond tb-bad", el("span", "tb-icon", "✗"), t)))) : null,
+      el("p", "tb-line", "Atlas's schema validator requires failed-before and passed-after. Nothing was stored."),
+      el("p", "tb-muted", `${d.caseId ? `Case ${d.caseId} · ` : ""}run ${ev.runId || "?"} · ${new Date(ev.at).toLocaleTimeString()}`));
+    card.appendChild(el("div", "stamp refused", "Refused")); // P3's stamp style (styles.css)
+    return card;
+  }
+
+  async function showRefusal(runId) {
+    const slot = document.getElementById("memory-slot");
+    if (!slot) return null;
+    try {
+      const list = await window.traceback.api("/memories/refusals?limit=10");
+      const ev = runId ? list.find((e) => e.runId === runId) : list[0];
+      slot.replaceChildren(ev ? renderRefusal(ev) : el("p", "tb-muted", "No refused memory writes for your team."));
+      return ev || null;
+    } catch (err) {
+      slot.replaceChildren(el("p", "tb-muted", `Refusals unavailable: ${err.message}`));
+      return null;
+    }
+  }
+
   // ---------------------------------------------------------------- styles (kept here so P3's page stays untouched)
   function injectStyles() {
     const css = `
@@ -370,6 +459,9 @@
       .tb-admin-btns { display:flex; gap:8px; }
       .tb-admin .tb-btn { flex:1; font-size:14px; padding:6px 10px; margin:0; }
       .tb-admin .tb-danger { background:#b42318; border-color:#b42318; color:#fff; }
+      .tb-admin .tb-plain-btn { background:transparent; color:inherit; border:1px solid #c5ccd3; }
+      .tb-history { font-size:13px; margin:8px 0 0; padding-left:1.2em; } .tb-history li { margin:2px 0; }
+      .tb-refused { position:relative; } .tb-refused .tb-title { color:#b42318; }
       .tb-filter { display:block; font-size:12px; white-space:normal; word-break:break-word; padding:6px 8px; }
     `;
     document.head.appendChild(el("style", null, css));
@@ -381,9 +473,12 @@
   window.traceback.renderFence = renderFence; // async (q?) -> node
   window.traceback.showFence = showFence; // async (q?): puts the Fence view in #memory-slot (beat 4)
   // Forget fires document event "traceback:memory-forgotten" with detail {memoryId, card}.
+  window.traceback.renderRefusal = renderRefusal; // (auditEvent) -> node
+  window.traceback.showRefusal = showRefusal; // async (runId?): latest (or that run's) refusal into #memory-slot
 
   injectStyles();
   setInterval(tick, 1000);
+  setInterval(refreshStaleness, 5000);
   document.addEventListener("DOMContentLoaded", () => {
     // app.js sets <body class="team-…"> on every identity change (the pill AND keys 4/5),
     // so watching the body class catches all of them.

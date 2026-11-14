@@ -15,11 +15,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
+from agent.budgets import Budget
 from agent.events import EventSink
 from agent.loop import run_investigation
 from contracts.interfaces import MemoryStore, Runner
 from contracts.models import (
-    BudgetUsage,
     CaseManifest,
     ErrorPayload,
     MemoryMode,
@@ -143,6 +143,9 @@ class AgentDeps:
     llm: Any
     revision: str = "unknown"
     synchronous: bool = False  # tests run the agent inline instead of in a thread
+    promote: bool = True  # AGENT_PROMOTE=false on experiment servers
+    runner_name: str | None = None  # what actually runs, recorded on every run (fakes are never silent)
+    store_name: str | None = None
 
 
 def visible_to(doc: dict[str, Any] | None, principal: Principal) -> bool:
@@ -164,7 +167,7 @@ def start_run(
             return existing
 
     run_id = new_id("run")
-    budget = BudgetUsage(max_tool_calls=8, max_patch_attempts=2, deadline_seconds=120)
+    limits = Budget.from_settings()  # AGENT_MAX_TOOL_CALLS / AGENT_MAX_PATCH_ATTEMPTS / AGENT_DEADLINE_SECONDS
     doc = {
         "_id": run_id,
         "runId": run_id,
@@ -174,7 +177,14 @@ def start_run(
         "teamId": principal.team_id,
         "status": "queued",
         "memoryMode": memory_mode,
-        "budget": budget.model_dump(by_alias=True),
+        "budget": limits.usage().model_dump(by_alias=True),
+        "agent": {
+            "runner": deps.runner_name or type(deps.runner).__name__,
+            "store": deps.store_name or type(deps.memory).__name__,
+            "model": getattr(deps.llm, "model", None),
+            "revision": deps.revision,
+            "promote": deps.promote,
+        },
         "createdAt": utc_now(),
     }
     if idempotency_key:
@@ -196,7 +206,10 @@ def start_run(
                 deps.runner,
                 deps.llm,
                 memory_mode=memory_mode,
+                # the clock starts when the run starts, not while it waited in the queue
+                budget=Budget(limits.max_tool_calls, limits.max_patch_attempts, limits.deadline_seconds),
                 sink=sink,
+                promote=deps.promote,
                 incident_id=incident["_id"],
                 revision=deps.revision,
             )
@@ -222,5 +235,5 @@ def start_run(
 
 def run_view(doc: dict[str, Any]) -> RunView:
     data = {k: v for k, v in doc.items() if k != "_id"}
-    data.setdefault("budget", BudgetUsage(max_tool_calls=8, max_patch_attempts=2, deadline_seconds=120).model_dump())
+    data.setdefault("budget", Budget.from_settings().usage().model_dump(by_alias=True))
     return RunView.model_validate(data)

@@ -1,4 +1,4 @@
-"""Memory REST endpoints (P2-5, P2-6, P2-7). Stubs return 501 until implemented.
+"""Memory REST endpoints (P2-4 to P2-7): cards, search, Fence comparison, forget, expire, correct, history.
 
 Mounted by api/main.py. Every route is scoped to the caller's team; admin routes need memory_admin.
 Route order matters: /memories/search and /memories/compare-unscoped must stay above /memories/{memory_id}.
@@ -22,10 +22,6 @@ def store() -> AtlasMemoryStore:
     return AtlasMemoryStore()
 
 
-def _todo(item: str) -> HTTPException:
-    return HTTPException(status.HTTP_501_NOT_IMPLEMENTED, f"Not implemented yet ({item}).")
-
-
 @router.get("", response_model=list[MemoryCard])
 def list_memories(principal: CurrentPrincipal) -> list[MemoryCard]:
     """Memories the caller's team may read (any status, so expired ones show as expired)."""
@@ -40,6 +36,13 @@ def search_memories(q: str, principal: CurrentPrincipal) -> MemorySearchResult:
     cards = s.search(principal, q)
     return MemorySearchResult(query=q, team_id=principal.team_id, count=len(cards), memories=cards,
                               filter=s.printable_scope(principal))
+
+
+@router.get("/refusals")
+def recent_refusals(principal: CurrentPrincipal, limit: int = 5) -> list[dict]:
+    """Writes Atlas refused for the caller's team, newest first (R11, "Memory refused: no proof").
+    Facts only: run, case, failing test names. Nothing was stored, so there is no content."""
+    return store().refusals(principal, min(max(limit, 1), 20))
 
 
 @router.get("/compare-unscoped", response_model=MemorySearchResult)
@@ -60,16 +63,27 @@ def get_memory(memory_id: str, principal: CurrentPrincipal) -> MemoryCard:
     return card
 
 
+@router.get("/{memory_id}/stale")
+def memory_stale(memory_id: str, principal: CurrentPrincipal) -> dict:
+    """R12: has the code changed since this memory was proven? {stale, changedFiles}. Not audited,
+    so the card can poll it."""
+    result = store().staleness(principal, memory_id)
+    if result is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No memory with that id for your team.")
+    return result
+
+
 @router.get("/{memory_id}/audit")
 def memory_audit(memory_id: str, principal: AdminPrincipal) -> list[dict]:
-    """Who read, used, changed or deleted this memory."""
-    raise _todo("P2-7")
+    """Who read, used, changed or deleted this memory: every audit event of its lineage, oldest first.
+    Admin of the owner team; still readable after Forget (tombstones never contain content)."""
+    return _admin(lambda: store().history(principal, memory_id))
 
 
 @router.post("/{memory_id}/correct", response_model=MemoryCard)
 def correct_memory(memory_id: str, body: CorrectBody, principal: AdminPrincipal) -> MemoryCard:
-    """Version 2 with narrowed `excludes` supersedes version 1; both stay in the history."""
-    raise _todo("P2-7")
+    """Version 2 with narrowed `excludes` supersedes version 1; both stay in the history. Returns v2."""
+    return _admin(lambda: store().correct(principal, memory_id, body.excludes, body.reason))
 
 
 @router.post("/{memory_id}/expire", response_model=MemoryCard)

@@ -20,6 +20,7 @@ from contracts.models import (
     FilePatch,
     MemoryCandidate,
     MemoryDraft,
+    MemoryOutcome,
     MemoryUseDecision,
     Observations,
     Principal,
@@ -127,7 +128,8 @@ class FakeMemoryStore:
         version: int,
         run_id: str,
         decision: MemoryUseDecision,
-    ) -> None:
+    ) -> MemoryOutcome | None:
+        """Same outcomes as AtlasMemoryStore.record_use (no expiry arithmetic, no audit trail)."""
         self.uses.append(
             {
                 "team_id": principal.team_id,
@@ -137,6 +139,18 @@ class FakeMemoryStore:
                 "decision": decision.decision,
             }
         )
+        if decision.decision in ("rejected", "stale"):
+            return "near_miss"
+        v = decision.verification
+        if v is None or v.status == "inconclusive":
+            return None
+        if v.verified:
+            return "renewed"
+        held = bool(decision.preconditions) and all(r.held is True for r in decision.preconditions)
+        if held and memory_id in self.memories:
+            self.memories.pop(memory_id)  # disputed: no longer recalled
+            return "disputed"
+        return None
 
     def promote(self, principal: Principal, draft: MemoryDraft, verification: VerificationResult) -> str:
         if not verification.verified:

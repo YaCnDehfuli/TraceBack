@@ -1,7 +1,7 @@
 """AtlasMemoryStore: the real MemoryStore (contracts/interfaces.py). The only code that writes memories.
 
 Done: promote, is_searchable, recall, search, unscoped_search (P2-2, P2-5); record_use, forget,
-expire_now (P2-6). Still to do: correct (P2-7).
+expire_now (P2-6); correct, history (P2-7); staleness (P2-10).
 
 Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 - recall: $vectorSearch pre-filter on tenantId, readableBy, status="active", expiresAt > now,
@@ -48,10 +48,19 @@ from . import audit
 from .config import EMBEDDING_VERSION, MIN_SCORE, VECTOR_INDEX
 from .embeddings import embed_one
 from .policy import expiry_for, get_policy
+from .staleness import changed_files, proven_against
 
 NUM_CANDIDATES = 100
 VECTOR_LIMIT = 5
-STRONG_MATCH = 0.80  # display only: "match: strong/weak", never a raw score on screen
+# "match: strong/weak" (shown instead of a raw score) comes from the VECTOR score only (#55): an exact
+# signature hit (same error code + operation) still surfaces a look-alike so its conditions can refuse it,
+# but it no longer implies strong similarity. Measured with P1's code-derived recall text (add769c), Atlas
+# scores = (1 + cosine) / 2: true repeats A/B/B2/B3/P 0.952; look-alikes D 0.939, C 0.927; best distractor 0.778.
+STRONG_MATCH = 0.945
+
+
+def match_label(vector_score: float | None) -> str:
+    return "strong" if (vector_score or 0.0) >= STRONG_MATCH else "weak"
 HIDDEN = {"embedding": 0}  # hmacSecret is read for audit hashes, then stripped before returning
 
 
@@ -139,6 +148,8 @@ class AtlasMemoryStore:
             "confirmedCause": d.confirmed_cause,
             "applicability": d.applicability.model_dump(by_alias=True),
             "anchors": [a.model_dump(by_alias=True) for a in d.anchors],
+            # R12: fingerprints of the touched files as they are now, i.e. the code this fix was proven on.
+            "provenAgainst": proven_against(d.repository_id, [a.path for a in d.anchors] or [d.patch.path]),
             "resolution": {"summary": d.resolution_summary, "patch": d.patch.model_dump(by_alias=True)},
             "provenance": {
                 "sourceIncidentId": d.incident_id,
@@ -181,7 +192,11 @@ class AtlasMemoryStore:
             audit.log(
                 self.db, tenant_id=p.tenant_id, event="refused", actor=actor, run_id=v.run_id,
                 reason="no proof: verification must be passed, failed before and passed after",
-                details={"status": v.status, "beforeFailed": v.before_failed, "afterPassed": v.after_passed},
+                # Facts for the refusal receipt (R11). Test names only, never memory content.
+                details={"status": v.status, "beforeFailed": v.before_failed, "afterPassed": v.after_passed,
+                         "teamId": p.team_id, "caseId": v.case_id, "repositoryId": d.repository_id,
+                         "testsPassed": v.tests_passed, "testsTotal": len(v.tests),
+                         "failedTests": [t.name for t in v.tests if not t.passed]},
             )
             raise MemoryRefused(str(e.details)) from e
 
@@ -300,7 +315,9 @@ class AtlasMemoryStore:
         scores: dict[str, float] = {}
         sources: dict[str, set[str]] = {}
 
+        vector_scores: dict[str, float] = {}  # every vector hit, also those below the cutoff (for labels)
         for h in self._vector(embed_one(text, "query"), scope):
+            vector_scores[h["_id"]] = h["score"]
             if h["score"] >= MIN_SCORE:
                 scores[h["_id"]] = h["score"]
                 sources.setdefault(h["_id"], set()).add("vector")
@@ -312,7 +329,7 @@ class AtlasMemoryStore:
             if signature.get("operation"):
                 sig["signature.operation"] = signature["operation"]
             for doc in self.memories.find({**scope, **sig}, {"_id": 1}).limit(VECTOR_LIMIT):
-                scores.setdefault(doc["_id"], 0.0)
+                scores.setdefault(doc["_id"], vector_scores.get(doc["_id"], 0.0))  # its real similarity
                 sources.setdefault(doc["_id"], set()).add("signature")
 
         if not scores:
@@ -335,7 +352,7 @@ class AtlasMemoryStore:
             doc["_rank"] = rank
             doc["_score"] = scores[doc["_id"]]
             doc["_source"] = "vector" if "vector" in src else "signature"
-            doc["_match"] = "strong" if scores[doc["_id"]] >= STRONG_MATCH or "signature" in src else "weak"
+            doc["_match"] = match_label(scores[doc["_id"]])  # similarity only; a signature hit is not "strong"
         audit.log_many(self.db, events)
         return ranked
 
@@ -375,7 +392,7 @@ class AtlasMemoryStore:
             doc = docs.get(h["_id"])
             if doc is None:  # deleted since the index saw it
                 continue
-            doc["_match"] = "strong" if h["score"] >= STRONG_MATCH else "weak"
+            doc["_match"] = match_label(h["score"])
             card = self.to_card(doc)
             if principal.team_id not in doc["readableBy"]:
                 owner = doc["ownerTeamId"].removeprefix("team-").capitalize()
@@ -436,6 +453,95 @@ class AtlasMemoryStore:
         doc.update(expiresAt=now, purgeAt=purge)
         return self.to_card(doc)
 
+    # ------------------------------------------------------------------ correction and audit (P2-7)
+
+    def correct(self, principal: Principal, memory_id: str, excludes: list[str], reason: str) -> MemoryCard:
+        """Correct WITHOUT overwriting (guide rule 5): a new version with narrowed `excludes` supersedes
+        the current one, and both stay in the lineage. Only narrowing is allowed here (adding exclusions);
+        changing the fix itself would need a new verification run. Same proof, same expiry, same
+        embedding (the retrieval text doesn't change), a fresh per-version HMAC secret."""
+        if not reason or not reason.strip():
+            raise ValueError("a reason is required")
+        added = [x.strip() for x in excludes if x and x.strip()]
+        if not added:
+            raise ValueError("give at least one exclusion to add")
+        old = self._owned(principal, memory_id)
+        if old["status"] != "active":
+            raise ValueError(f"only an active memory can be corrected (this one is {old['status']})")
+        old = self.memories.find_one({"_id": memory_id})  # with the embedding, to copy it
+        merged = list(dict.fromkeys([*old.get("applicability", {}).get("excludes", []), *added]))
+
+        new_version = old["version"] + 1
+        new_id = f"{old['lineageId']}_v{new_version}"
+        now = utc_now()
+        new = {**old, "_id": new_id, "version": new_version, "supersedes": memory_id, "status": "active",
+               "applicability": {**old.get("applicability", {}), "excludes": merged},
+               "hmacSecret": secrets.token_hex(32), "createdAt": now,
+               "correction": {"by": _actor(principal)["id"], "reason": reason.strip(), "at": now,
+                              "addedExcludes": added}}
+
+        # Retire the old version first, atomically (only if still active), then add the new one.
+        res = self.memories.update_one({"_id": memory_id, "status": "active"}, {"$set": {"status": "superseded"}})
+        if not res.modified_count:
+            raise ValueError("the memory changed meanwhile; reload and try again")
+        try:
+            self.memories.insert_one(new)
+        except Exception:
+            self.memories.update_one({"_id": memory_id}, {"$set": {"status": "active"}})  # roll back
+            raise
+
+        actor = _actor(principal)
+        audit.log_many(self.db, [
+            {"tenantId": principal.tenant_id, "memoryId": memory_id, "version": old["version"], "event": "corrected",
+             "actor": actor, "runId": None, "reason": reason.strip(), "contentHash": audit.content_hash(old),
+             "details": {"supersededBy": new_id, "addedExcludes": added}},
+            {"tenantId": principal.tenant_id, "memoryId": new_id, "version": new_version, "event": "corrected",
+             "actor": actor, "runId": None, "reason": reason.strip(), "contentHash": audit.content_hash(new),
+             "details": {"supersedes": memory_id, "addedExcludes": added}},
+        ])
+        return self.to_card(new)
+
+    def history(self, principal: Principal, memory_id: str) -> list[dict]:
+        """GET /memories/{id}/audit: every audit event of this memory's whole lineage, oldest first
+        ("who read memory X?"). Admin of the owner team. After Forget, the tombstone history is still
+        readable by an admin of the team that forgot it. Events never contain memory content."""
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(principal)}, {"lineageId": 1, "ownerTeamId": 1})
+        if doc is not None:
+            if doc["ownerTeamId"] != principal.team_id:
+                raise PermissionError("only an admin of the owner team can read the history")
+            ids = [d["_id"] for d in self.memories.find({"lineageId": doc["lineageId"]}, {"_id": 1})]
+        else:
+            tomb = self.db.memory_audit.find_one({"memoryId": memory_id, "event": "forgotten",
+                                                  "tenantId": principal.tenant_id})
+            if tomb is None or not tomb["actor"]["id"].endswith(f"@{principal.team_id}"):
+                raise LookupError(memory_id)
+            lineage = tomb.get("details", {}).get("lineageId", memory_id)
+            ids = self.db.memory_audit.distinct("memoryId", {"tenantId": principal.tenant_id, "event": "forgotten",
+                                                             "details.lineageId": lineage}) or [memory_id]
+        events = self.db.memory_audit.find({"tenantId": principal.tenant_id, "memoryId": {"$in": ids}},
+                                           {"_id": 0, "tenantId": 0}).sort("at", 1)
+        return list(events)
+
+    def staleness(self, principal: Principal, memory_id: str) -> dict | None:
+        """R12, cheap and unaudited (the UI polls it): has the code changed since this memory was
+        proven? None if the caller's team can't read the memory."""
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(principal)},
+                                     {"repositoryId": 1, "provenAgainst": 1})
+        if doc is None:
+            return None
+        changed = changed_files(doc["repositoryId"], doc.get("provenAgainst", []))
+        return {"memoryId": memory_id, "stale": bool(changed), "changedFiles": changed,
+                "checked": bool(doc.get("provenAgainst"))}
+
+    def refusals(self, principal: Principal, limit: int = 5) -> list[dict]:
+        """Recent writes Atlas refused for the caller's team (R11): newest first, facts only
+        (run, case, which tests failed). Nothing was stored, so there is no memory to show."""
+        cur = self.db.memory_audit.find(
+            {"tenantId": principal.tenant_id, "event": "refused", "details.teamId": principal.team_id},
+            {"_id": 0, "tenantId": 0, "memoryId": 0, "version": 0, "contentHash": 0},
+        ).sort("at", -1).limit(limit)
+        return list(cur)
+
     @staticmethod
     def printable_scope(p: Principal) -> dict:
         """The $vectorSearch pre-filter as shown on screen in the Fence view."""
@@ -491,6 +597,7 @@ class AtlasMemoryStore:
             applicability=Applicability.model_validate(doc.get("applicability") or {}),
             anchors=[FileAnchor.model_validate(a) for a in doc.get("anchors", [])],
             expires_at=doc["expiresAt"],
+            stale=bool(changed_files(doc["repositoryId"], doc.get("provenAgainst", []))),
         )
 
     @staticmethod
@@ -510,5 +617,6 @@ class AtlasMemoryStore:
                         tests_total=v.get("testsTotal", 0), verification_run_id=v["runId"]),
             applicability=Applicability.model_validate(doc.get("applicability") or {}),
             seeded=doc.get("seeded", False),
+            stale=bool(changed_files(doc["repositoryId"], doc.get("provenAgainst", []))),
             match=doc.get("_match"),
         )

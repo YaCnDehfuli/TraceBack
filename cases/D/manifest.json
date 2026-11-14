@@ -21,6 +21,7 @@
     "test_duplicate_event_reproduces",
     "test_duplicate_event_single_effect",
     "test_distinct_events_same_customer",
+    "test_handler_does_not_change_indexes",
     "test_unique_index_still_present",
     "test_replay_recorded_for_reconciliation"
   ],
