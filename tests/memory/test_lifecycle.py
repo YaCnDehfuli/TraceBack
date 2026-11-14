@@ -63,8 +63,14 @@ def test_correction_makes_v2_and_keeps_v1_in_history(client, mem, payments):
     assert v1["status"] == "superseded"  # kept, not overwritten
     assert s.memories.find_one({"_id": f"{mem_id}_v2"})["supersedes"] == mem_id
 
-    found = recalled(s, payments)
-    assert f"{mem_id}_v2" in found and mem_id not in found  # superseded never comes back
+    # v1 is dropped at once (re-read guard). v2 needs the vector index to catch up: until then it is
+    # found only by the exact signature lookup (score 0) and, in a database with other webhook
+    # memories, can rank below the top 3 (issue #46). Wait for it like promote callers do.
+    assert mem_id not in recalled(s, payments)  # superseded never comes back
+    end = time.time() + 60
+    while not s.is_searchable(payments, f"{mem_id}_v2") and time.time() < end:
+        time.sleep(1)
+    assert f"{mem_id}_v2" in recalled(s, payments)
 
     # v1 can't be corrected again; the active version can.
     assert client.post(f"/memories/{mem_id}/correct", headers=PAY_ADMIN, json=NARROW).status_code == 422

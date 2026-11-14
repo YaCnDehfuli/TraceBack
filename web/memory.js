@@ -365,6 +365,39 @@
     }
   }
 
+  // ---------------------------------------------------------------- refusal receipt (R11)
+  // "Memory refused: no proof." The fix failed verification, so Atlas's validator refused the write.
+  // Nothing was stored: the receipt shows only facts from the audit log (run, case, failing tests).
+  function renderRefusal(ev) {
+    const d = ev.details || {};
+    const failed = d.failedTests || [];
+    const card = el("div", "tb-card tb-refused",
+      el("div", "tb-label", "Memory write · refused by the database"),
+      el("div", "tb-title", "Memory refused: no proof."),
+      el("p", "tb-line tb-bad", `✗ Verification ${d.status || "failed"}: ` +
+        `${d.testsPassed ?? "?"}/${d.testsTotal ?? "?"} tests pass after the fix`),
+      failed.length ? el("div", "tb-block", el("div", "tb-label", "Failing"),
+        el("ul", "tb-conds", ...failed.map((t) => el("li", "tb-cond tb-bad", el("span", "tb-icon", "✗"), t)))) : null,
+      el("p", "tb-line", "Atlas's schema validator requires failed-before and passed-after. Nothing was stored."),
+      el("p", "tb-muted", `${d.caseId ? `Case ${d.caseId} · ` : ""}run ${ev.runId || "?"} · ${new Date(ev.at).toLocaleTimeString()}`));
+    card.appendChild(el("div", "stamp refused", "Refused")); // P3's stamp style (styles.css)
+    return card;
+  }
+
+  async function showRefusal(runId) {
+    const slot = document.getElementById("memory-slot");
+    if (!slot) return null;
+    try {
+      const list = await window.traceback.api("/memories/refusals?limit=10");
+      const ev = runId ? list.find((e) => e.runId === runId) : list[0];
+      slot.replaceChildren(ev ? renderRefusal(ev) : el("p", "tb-muted", "No refused memory writes for your team."));
+      return ev || null;
+    } catch (err) {
+      slot.replaceChildren(el("p", "tb-muted", `Refusals unavailable: ${err.message}`));
+      return null;
+    }
+  }
+
   // ---------------------------------------------------------------- styles (kept here so P3's page stays untouched)
   function injectStyles() {
     const css = `
@@ -406,6 +439,7 @@
       .tb-admin .tb-danger { background:#b42318; border-color:#b42318; color:#fff; }
       .tb-admin .tb-plain-btn { background:transparent; color:inherit; border:1px solid #c5ccd3; }
       .tb-history { font-size:13px; margin:8px 0 0; padding-left:1.2em; } .tb-history li { margin:2px 0; }
+      .tb-refused { position:relative; } .tb-refused .tb-title { color:#b42318; }
       .tb-filter { display:block; font-size:12px; white-space:normal; word-break:break-word; padding:6px 8px; }
     `;
     document.head.appendChild(el("style", null, css));
@@ -417,6 +451,8 @@
   window.traceback.renderFence = renderFence; // async (q?) -> node
   window.traceback.showFence = showFence; // async (q?): puts the Fence view in #memory-slot (beat 4)
   // Forget fires document event "traceback:memory-forgotten" with detail {memoryId, card}.
+  window.traceback.renderRefusal = renderRefusal; // (auditEvent) -> node
+  window.traceback.showRefusal = showRefusal; // async (runId?): latest (or that run's) refusal into #memory-slot
 
   injectStyles();
   setInterval(tick, 1000);

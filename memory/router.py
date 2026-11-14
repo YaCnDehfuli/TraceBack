@@ -38,6 +38,13 @@ def search_memories(q: str, principal: CurrentPrincipal) -> MemorySearchResult:
                               filter=s.printable_scope(principal))
 
 
+@router.get("/refusals")
+def recent_refusals(principal: CurrentPrincipal, limit: int = 5) -> list[dict]:
+    """Writes Atlas refused for the caller's team, newest first (R11, "Memory refused: no proof").
+    Facts only: run, case, failing test names. Nothing was stored, so there is no content."""
+    return store().refusals(principal, min(max(limit, 1), 20))
+
+
 @router.get("/compare-unscoped", response_model=MemorySearchResult)
 def compare_unscoped(q: str, principal: AdminPrincipal) -> MemorySearchResult:
     """Admin only, for the Fence view: what the search WOULD return without the team filter.

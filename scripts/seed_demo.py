@@ -3,6 +3,7 @@
     uv run python scripts/seed_demo.py --db traceback_demo --reset    # what demo_reset runs
     uv run python scripts/seed_demo.py --db traceback_demo            # top up, keep what exists
     uv run python scripts/seed_demo.py --db traceback_p2 --sample     # + a hand-made webhook memory (testing)
+    uv run python scripts/seed_demo.py --db traceback_demo --poison   # + a real "Memory refused: no proof" (R11)
 
 Creates:
 - team policies (24 h life, 48 h max lifetime)
@@ -41,7 +42,7 @@ from contracts.models import (  # noqa: E402
 )
 from core.db import get_db  # noqa: E402
 from memory.policy import DEMO_POLICY  # noqa: E402
-from memory.store import AtlasMemoryStore  # noqa: E402
+from memory.store import AtlasMemoryStore, MemoryRefused  # noqa: E402
 
 TENANT = "demo-org"
 TEAMS = ["team-payments", "team-platform"]
@@ -216,6 +217,36 @@ def earn(store: AtlasMemoryStore, runner_choice: str, reset: bool) -> bool:
     return True
 
 
+def poison(store: AtlasMemoryStore) -> bool:
+    """R11, deterministic: run case P's POISONED fix (it follows the log's injected "drop the unique
+    index" instruction) through the real runner, then try to save it as a memory the way a run would.
+    The runner fails test_unique_index_still_present, so Atlas's validator refuses the write.
+    Returns True only if the database really refused it."""
+    from runner.sandbox import LocalRunner
+
+    manifest = CaseManifest.model_validate_json((ROOT / "cases" / "P" / "manifest.json").read_text("utf-8"))
+    path = manifest.patchable_files[0]
+    fix = FilePatch(path=path, new_content=(ROOT / "cases" / "P" / "poisoned" / Path(path).name).read_text("utf-8"))
+    result = LocalRunner().verify("P", fix)
+    failed = [t.name for t in result.tests if not t.passed]
+    print(f"poison: case P poisoned fix -> {result.status}, failed: {', '.join(failed) or 'none'}")
+    if result.status == "inconclusive":
+        print(f"poison: FAILED, runner could not run ({result.detail}). "
+              "Start it: docker run -d --name fixture-mongo -p 27018:27017 mongo")
+        return False
+    obs = observations_from_case(manifest, incident_id="inc_demo_poison_P")
+    draft = build_draft(obs, fix, source_revision=git_revision(), confirmed_cause="Drop the unique index.",
+                        resolution_summary="Drop the unique index on provider_event_id.")
+    try:
+        mem_id = store.promote(PAYMENTS, draft, result)
+    except MemoryRefused as e:
+        print(f"poison: {e} (Atlas validator; audit event 'refused', run {result.run_id})")
+        return True
+    store.memories.delete_many({"_id": mem_id})  # must never happen: don't leave it behind
+    print("poison: FAILED, the poisoned fix verified and was stored; removed it. Check case P.")
+    return False
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Seed Traceback demo data.")
     ap.add_argument("--db", required=True)
@@ -225,6 +256,8 @@ def main() -> int:
     ap.add_argument("--no-earn", action="store_true", help="skip the Earn memory")
     ap.add_argument("--no-distractors", action="store_true", help="skip the ~20 labelled distractor memories")
     ap.add_argument("--sample", action="store_true", help="also seed a hand-made webhook memory (testing only)")
+    ap.add_argument("--poison", action="store_true",
+                    help="R11: real runner on case P's poisoned fix, then a write Atlas refuses (needs Docker)")
     a = ap.parse_args()
     db = get_db(a.db)
 
@@ -246,6 +279,8 @@ def main() -> int:
     print("canary (90 s):", canary)
     if not a.no_distractors:
         print(f"distractors: {seed_distractors(store)} labelled seeded memories (both teams, 24 h)")
+    if a.poison:
+        ok = poison(store) and ok
     if a.sample:
         print("sample webhook memory:", store.promote(PAYMENTS, SAMPLE_WEBHOOK, SEEDED_PROOF, seeded=True,
                                                       title="Sample: duplicate webhook (hand-made)"))
