@@ -9,8 +9,9 @@
   if (!window.traceback) return;
 
   const TEAMS = {
-    // Same colours as web/styles.css (.team-payments / .team-platform --team).
-    "team-payments": { name: "Payments", color: "#0f766e" },
+    // Same colours as web/styles.css (.team-payments / .team-platform --team). Payments is cyan, not
+    // teal, so it doesn't read as the green "tests passed" on a projector (issue #15).
+    "team-payments": { name: "Payments", color: "#0e7490" },
     "team-platform": { name: "Platform", color: "#6d28d9" },
   };
   const team = (id) => TEAMS[id] || { name: String(id || "").replace(/^team-/, ""), color: "#5b6670" };
@@ -55,9 +56,15 @@
 
   // ---------------------------------------------------------------- the card
   function forgottenCard(memory) {
+    // Content is gone, so the receipt lines are blacked out (issue #17); P3's CSS adds the VOID stamp.
     const f = memory.forgotten;
+    const bars = [78, 52, 66, 40].map((w) => {
+      const bar = el("span", "tb-redacted");
+      bar.style.width = `${w}%`;
+      return bar;
+    });
     return el("div", "tb-card tb-forgotten",
-      el("div", "tb-title", memory.title || "Memory"),
+      el("div", "tb-redactions", ...bars),
       el("p", "tb-line", `Forgotten by ${actorLabel(f.forgottenBy)} · ${f.reason} · content erased`),
       el("p", "tb-muted", new Date(f.at).toLocaleString()));
   }
@@ -191,6 +198,7 @@
                  padding:14px 16px; margin:0 0 14px; font-size:15px; line-height:1.4; }
       .tb-card.tb-expired { opacity:.55; filter:grayscale(1); }
       .tb-forgotten { background:transparent; border:2px dashed #9aa4ad; border-top-width:2px; color:#5b6670; }
+      .tb-redactions { margin:4px 0 10px; } .tb-redacted { display:block; height:.85em; margin:7px 0; background:#1d232a; border-radius:2px; }
       .tb-title { font-size:18px; font-weight:650; margin:6px 0 8px; }
       .tb-line { margin:4px 0; }
       .tb-proof { color:#1a7f37; font-weight:600; }
