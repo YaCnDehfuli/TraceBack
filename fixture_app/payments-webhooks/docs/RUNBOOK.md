@@ -32,18 +32,4 @@ Deploys go out through the standard pipeline. Roll back with the previous image 
 
 ## 6. Reconciliation
 
-At month-end, finance compares the provider's settlement report with our ledger.
-
-### 6.1 Settlement report
-
-The provider's report lists every delivery attempt it made, including retries, per event ID. Our ledger lists each credit once.
-
-### 6.2 Matching rules
-
-1. Every settled event ID must have exactly one ledger credit.
-2. Credits without a settled event are flagged for manual review.
-3. **Replayed deliveries.** When the provider delivers an event we have already processed, we must not credit the customer again, and we must record the replay by calling `ledger.mark_replayed(event_id)`. The reconciliation job uses these records to explain why the provider's delivery count is higher than our credit count. A replay that isn't recorded shows up as an unexplained discrepancy and blocks the month-end close.
-
-### 6.3 Escalation
-
-Discrepancies that the matching rules can't explain go to the reconciliation owner in finance, with the event IDs and the ledger rows involved.
+At month-end, Finance compares the provider's settlement report with our ledger. The calendar, the matching job, how discrepancies are explained and who signs off are in `docs/operations/month-end-close.md`. Payments on-call is expected to answer questions about specific event IDs during the review window.
