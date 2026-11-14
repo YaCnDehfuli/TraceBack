@@ -127,4 +127,14 @@ The live agent, Atlas memory and the demo identities need the `.env` file (see `
 - **Demo identity keys.** The four API keys (`key-payments-eng` and so on) are fake, local-only values that show how identity flows. They are not real authentication.
 - **Seeded distractors.** Extra memories added to make vector search realistic are labelled `seeded`.
 - **The sample replay (`0`)** is a recording, and the page says "Replay".
-- **One bug family.** Duplicate-key retries, on two apps. We make no claim about other bugs.
+- **Proof is only as strong as the tests.** A memory is written only after tests the agent can't edit go from failing to passing. In a real team that gate would be the required CI checks. A weak test suite would let a weak fix in. It happened here once: the agent's first fix for case C created an index inside the request handler. The fix was two new trusted tests (`test_handler_does_not_change_indexes`, and one record per event in `test_distinct_events_same_customer`). The memory code didn't change.
+- **One bug family.** Duplicate-key retries, on two apps. The applicability conditions are a fixed, typed list (`dup_key_field`, `same_event_id_on_both_deliveries`). Their values are filled in from the parsed error when a memory is saved, and checked in plain code. Supporting another family means adding its error parser and condition fields. We make no claim about other bugs.
+
+### How this compares (checked 2026-11-14)
+
+Agent memory with scoping, expiry, correction and deletion already exists. The closest is [GitHub Copilot Memory](https://docs.github.com/en/copilot/concepts/agents/copilot-memory): repo-scoped memories with code citations, checked against the current branch before use, expiring unless reinforced. [Zep / Graphiti](https://github.com/getzep/graphiti) keeps old facts as history when they change, and [Mem0](https://docs.mem0.ai/platform/features/entity-scoped-memory) filters memories by scope at query time. In all of them, a model decides what gets saved and whether it still applies. What we didn't find in any of them (Copilot, Cursor, Devin, Claude, ChatGPT, Mem0, Zep, Letta, LangMem, Sentry Seer):
+
+- a memory is admitted only after an external test runner shows the fix turns a failing test into a passing one;
+- before reuse, typed conditions taken from the error are checked in code, and the memory is refused if they don't hold.
+
+That pair is the claim. The rest (team scope, expiry, history, deletion) is what any team memory needs, built on Atlas.
