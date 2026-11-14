@@ -10,6 +10,8 @@ Creates:
 - the **Earn memory**: case A's reference fix, verified by P3's real runner (LocalRunner) and promoted
   under Payments, exactly the path a real run takes. With --reset it is recreated, so its 24 h
   restart and a memory forgotten in the previous judging round comes back.
+- with --reset, memories that earlier agent runs promoted in the two demo repositories are forgotten
+  first (tombstones kept), so rehearsals can't leave stale duplicates behind (#67)
 - the 90-second **canary** (seeded), recreated every time so its countdown restarts
 - about 20 labelled **distractors** across both teams (R8): other bug families, so vector search and
   its score cutoff (memory/config.py MIN_SCORE) have something real to reject
@@ -217,6 +219,23 @@ def earn(store: AtlasMemoryStore, runner_choice: str, reset: bool) -> bool:
     return True
 
 
+DEMO_REPOSITORIES = ["payments-webhooks", "platform-webhooks"]
+
+
+def reset_memories(store: AtlasMemoryStore) -> dict:
+    """--reset (#67): start the demo memory from a known state.
+    1. Seeded memories (canary, distractors, a fake-runner Earn) are deleted; they're recreated below.
+    2. Every NON-seeded memory in the two demo repositories (the previous Earn, and anything earlier agent
+       runs promoted: duplicate Earns, case C/D memories) is forgotten, all versions, with tombstones by
+       policy:demo-reset, so no stale duplicate stays recallable. Other repositories are untouched.
+    Safe to run twice."""
+    seeded = store.memories.delete_many({"tenantId": TENANT, "seeded": True}).deleted_count
+    forgot = store.forget_for_reset(TENANT, DEMO_REPOSITORIES, "demo reset: start from a known state (#67)")
+    print(f"reset: deleted {seeded} seeded memories; forgot {forgot['lineages']} earlier memories in "
+          f"{', '.join(DEMO_REPOSITORIES)} ({forgot['versions']} version(s), tombstones kept)")
+    return {"seeded": seeded, **forgot}
+
+
 def poison(store: AtlasMemoryStore) -> bool:
     """R11, deterministic: run case P's POISONED fix (it follows the log's injected "drop the unique
     index" instruction) through the real runner, then try to save it as a memory the way a run would.
@@ -266,10 +285,10 @@ def main() -> int:
                                 {"tenantId": TENANT, "teamId": team, **DEMO_POLICY}, upsert=True)
     print(f"policies: {', '.join(TEAMS)}")
 
-    if a.reset:
-        print(f"reset: deleted {db.memories.delete_many({'seeded': True}).deleted_count} seeded memories")
-
     store = AtlasMemoryStore(db)
+    if a.reset:
+        reset_memories(store)
+
     ok = True if a.no_earn else earn(store, a.runner, a.reset)
 
     # The canary is recreated every time, so its 90-second countdown restarts.
