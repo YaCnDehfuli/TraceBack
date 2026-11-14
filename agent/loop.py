@@ -258,7 +258,10 @@ def _recall_and_check(
     try:
         candidates = memory.recall(principal, obs, run_id)
     except Exception as e:  # noqa: BLE001 - recall failure means "no memory", announced
-        sink.emit("error", ErrorPayload(message=f"Recall unavailable ({type(e).__name__}); continuing without memory"))
+        sink.emit(
+            "error",
+            ErrorPayload(message=f"Recall unavailable ({type(e).__name__}: {str(e)[:160]}); continuing without memory"),
+        )
         candidates = []
     sink.emit("recall", RecallPayload(count=len(candidates), memories=[c.ref() for c in candidates]))
 

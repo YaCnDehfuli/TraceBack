@@ -97,10 +97,11 @@ def pick_store(choice: str, seed: bool):
         if not get_settings().voyage_api_key.get_secret_value():
             raise RuntimeError("VOYAGE_API_KEY is not set")
         return AtlasMemoryStore(), "AtlasMemoryStore"
-    except RuntimeError as e:
+    except Exception as e:  # noqa: BLE001 - not configured, placeholder URI, DNS, network...
         if choice == "atlas":
             raise SystemExit(f"AtlasMemoryStore: {e}") from None
-        say(f"(Atlas memory not ready: {e}. Using FakeMemoryStore{' seeded with the Earn memory' if seed else ''}.)")
+        seeded = " seeded with the Earn memory" if seed else ""
+        say(f"(Atlas memory not ready: {str(e).rstrip('.')}. Using FakeMemoryStore{seeded}.)")
         return FakeMemoryStore(seed_example=seed), "FakeMemoryStore"
 
 

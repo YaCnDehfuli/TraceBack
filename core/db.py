@@ -22,6 +22,10 @@ class Collections:
 @lru_cache
 def get_client() -> MongoClient:
     uri = get_settings().mongodb_uri.get_secret_value()
+    if "xxxxx" in uri or "<password>" in uri:
+        raise RuntimeError(
+            "MONGODB_URI in .env is still the placeholder from .env.example. Paste the real connection string."
+        )
     if not uri:
         raise RuntimeError(
             "MONGODB_URI is not set. Copy .env.example to .env and fill it in (team guide, section 6.3)."
