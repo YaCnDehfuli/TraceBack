@@ -66,7 +66,7 @@ Judges will see vector memory with a team filter, a TTL index, an audit log and 
 
 The Payments team has a **local convention**: a replayed webhook must be recorded with `ledger.mark_replayed(event_id)` so month-end reconciliation can account for it.
 
-- It's documented **only** in `fixture_app/payments-webhooks/docs/RUNBOOK.md`, deep in a reconciliation section. **Don't** mention it in `ledger.py` docstrings or comments, or the agent finds it in one step.
+- It's documented **only** in `fixture_app/payments-webhooks/docs/operations/month-end-close.md` (section 5.2, "Provider re-deliveries"), reachable from the runbook's reconciliation section. **Don't** mention it in `ledger.py` docstrings or comments, or the agent finds it in one step.
 - New trusted test: `test_replay_recorded_for_reconciliation` checks that a duplicate delivery calls `mark_replayed` exactly once.
 - **Without memory:** the agent writes the plain `try/except`, that test fails, and it needs a second attempt or more searching.
 - **With memory:** the remembered fix includes the line, so it's verified on the first attempt.
