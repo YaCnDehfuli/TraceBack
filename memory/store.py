@@ -181,7 +181,11 @@ class AtlasMemoryStore:
             audit.log(
                 self.db, tenant_id=p.tenant_id, event="refused", actor=actor, run_id=v.run_id,
                 reason="no proof: verification must be passed, failed before and passed after",
-                details={"status": v.status, "beforeFailed": v.before_failed, "afterPassed": v.after_passed},
+                # Facts for the refusal receipt (R11). Test names only, never memory content.
+                details={"status": v.status, "beforeFailed": v.before_failed, "afterPassed": v.after_passed,
+                         "teamId": p.team_id, "caseId": v.case_id, "repositoryId": d.repository_id,
+                         "testsPassed": v.tests_passed, "testsTotal": len(v.tests),
+                         "failedTests": [t.name for t in v.tests if not t.passed]},
             )
             raise MemoryRefused(str(e.details)) from e
 
@@ -504,6 +508,15 @@ class AtlasMemoryStore:
         events = self.db.memory_audit.find({"tenantId": principal.tenant_id, "memoryId": {"$in": ids}},
                                            {"_id": 0, "tenantId": 0}).sort("at", 1)
         return list(events)
+
+    def refusals(self, principal: Principal, limit: int = 5) -> list[dict]:
+        """Recent writes Atlas refused for the caller's team (R11): newest first, facts only
+        (run, case, which tests failed). Nothing was stored, so there is no memory to show."""
+        cur = self.db.memory_audit.find(
+            {"tenantId": principal.tenant_id, "event": "refused", "details.teamId": principal.team_id},
+            {"_id": 0, "tenantId": 0, "memoryId": 0, "version": 0, "contentHash": 0},
+        ).sort("at", -1).limit(limit)
+        return list(cur)
 
     @staticmethod
     def printable_scope(p: Principal) -> dict:
