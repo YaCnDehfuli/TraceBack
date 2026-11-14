@@ -129,6 +129,19 @@ def test_placebo_file_loads_through_the_loops_own_reader():
     assert picked is not None and picked.memory_id == ab.placebo_for("inc_abc", raw)["memoryId"]
 
 
+def test_only_prompt_fields_are_length_gated():
+    """retrieval_text never reaches the prompt, so a recall-text change can't invalidate the placebos."""
+    raw = ab.load_placebo_file()
+    ref = ab.real_memory_lengths()
+    halved = {**ref, "retrieval_text": max(1, ref["retrieval_text"] // 2)}
+    report = ab.validate_placebos(raw, halved)
+    assert report["ok"], report["problems"]
+    assert all("retrieval_text" in item["ratios"] for item in report["items"]), "still reported"
+
+    off = {**ref, "injected": ref["injected"] * 2}
+    assert any("injected length" in p for p in ab.validate_placebos(raw, off)["problems"])
+
+
 def test_placebo_validation_catches_shape_length_count_and_topic():
     ref = ab.real_memory_lengths()
     raw = ab.load_placebo_file()

@@ -63,6 +63,9 @@ PROTECTED_DBS = frozenset(
 
 PLACEBO_COUNT = (3, 5)
 LENGTH_TOLERANCE = 0.15
+# Only what reaches the prompt is length-gated (agent.loop._memory_block: cause, resolution, proven fix).
+# retrieval_text is reported but not gated: it is never injected, and it changes whenever recall text does.
+GATED_LENGTHS = ("cause_and_resolution", "patch", "injected")
 # A placebo must be about a different bug: none of the case B mechanism's vocabulary.
 PLACEBO_FORBIDDEN = (
     "e11000", "duplicate", "provider_event_id", "webhook", "mark_replayed", "replay", "idempot",
@@ -227,7 +230,8 @@ def validate_placebos(raw: Any, reference: dict[str, int], tolerance: float = LE
             problems.append(f"{m.memory_id}: no resolutionPatch (the real memory injects one)")
         lengths = memory_lengths(m)
         ratios = {k: round(lengths[k] / reference[k], 3) if reference[k] else None for k in lengths}
-        for k, r in ratios.items():
+        for k in GATED_LENGTHS:
+            r = ratios[k]
             if r is None or abs(r - 1) > tolerance:
                 problems.append(f"{m.memory_id}: {k} length {lengths[k]} vs real {reference[k]} "
                                 f"(ratio outside {1 - tolerance:.2f}-{1 + tolerance:.2f})")
@@ -481,7 +485,9 @@ def render_markdown(meta: dict, scores: list[dict], summary: dict[str, dict], pl
             f"`/events`), {meta.get('repeats', 1)} time(s) per case and arm (N={meta.get('repeats', 1)}). "
             "**off**: no memory in the prompt. **placebo**: one unrelated memory (other bug types, "
             "`evals/placebo_memories.json`) injected by the loop through the same prompt block as a real "
-            "memory, length-matched (each length ratio to the real memory between 0.85 and 1.15, table "
+            "memory, length-matched on what reaches the prompt (cause + resolution, proven fix, and their "
+            "total: each ratio to the real memory between 0.85 and 1.15; `retrieval_text` is never injected, "
+            "so it is reported but not gated; table "
             "below). **real**: normal recall, with only case A's Earn memory in the database, proven by "
             "the real runner and promoted by the memory service "
             "(`scripts/seed_demo.earn`). "
@@ -550,7 +556,7 @@ def render_markdown(meta: dict, scores: list[dict], summary: dict[str, dict], pl
         "## Placebo length matching",
         "",
         "Characters. `injected` = confirmed cause + resolution + proven fix, i.e. what the loop's memory "
-        "block puts in the prompt; `retrieval_text` is matched too although it is not injected.",
+        "block puts in the prompt; `retrieval_text` is shown for reference only (never injected, not length-gated).",
         "",
         "| memory | retrieval_text | cause + resolution | patch | injected |",
         "|---|---|---|---|---|",
