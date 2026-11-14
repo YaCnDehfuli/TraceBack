@@ -1,7 +1,7 @@
 """AtlasMemoryStore: the real MemoryStore (contracts/interfaces.py). The only code that writes memories.
 
 Done: promote, is_searchable, recall, search, unscoped_search (P2-2, P2-5); record_use, forget,
-expire_now (P2-6); correct, history (P2-7).
+expire_now (P2-6); correct, history (P2-7); staleness (P2-10).
 
 Rules it keeps (team guide section 8, plan 4.4 and 4.5):
 - recall: $vectorSearch pre-filter on tenantId, readableBy, status="active", expiresAt > now,
@@ -48,6 +48,7 @@ from . import audit
 from .config import EMBEDDING_VERSION, MIN_SCORE, VECTOR_INDEX
 from .embeddings import embed_one
 from .policy import expiry_for, get_policy
+from .staleness import changed_files, proven_against
 
 NUM_CANDIDATES = 100
 VECTOR_LIMIT = 5
@@ -139,6 +140,8 @@ class AtlasMemoryStore:
             "confirmedCause": d.confirmed_cause,
             "applicability": d.applicability.model_dump(by_alias=True),
             "anchors": [a.model_dump(by_alias=True) for a in d.anchors],
+            # R12: fingerprints of the touched files as they are now, i.e. the code this fix was proven on.
+            "provenAgainst": proven_against(d.repository_id, [a.path for a in d.anchors] or [d.patch.path]),
             "resolution": {"summary": d.resolution_summary, "patch": d.patch.model_dump(by_alias=True)},
             "provenance": {
                 "sourceIncidentId": d.incident_id,
@@ -509,6 +512,17 @@ class AtlasMemoryStore:
                                            {"_id": 0, "tenantId": 0}).sort("at", 1)
         return list(events)
 
+    def staleness(self, principal: Principal, memory_id: str) -> dict | None:
+        """R12, cheap and unaudited (the UI polls it): has the code changed since this memory was
+        proven? None if the caller's team can't read the memory."""
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(principal)},
+                                     {"repositoryId": 1, "provenAgainst": 1})
+        if doc is None:
+            return None
+        changed = changed_files(doc["repositoryId"], doc.get("provenAgainst", []))
+        return {"memoryId": memory_id, "stale": bool(changed), "changedFiles": changed,
+                "checked": bool(doc.get("provenAgainst"))}
+
     def refusals(self, principal: Principal, limit: int = 5) -> list[dict]:
         """Recent writes Atlas refused for the caller's team (R11): newest first, facts only
         (run, case, which tests failed). Nothing was stored, so there is no memory to show."""
@@ -573,6 +587,7 @@ class AtlasMemoryStore:
             applicability=Applicability.model_validate(doc.get("applicability") or {}),
             anchors=[FileAnchor.model_validate(a) for a in doc.get("anchors", [])],
             expires_at=doc["expiresAt"],
+            stale=bool(changed_files(doc["repositoryId"], doc.get("provenAgainst", []))),
         )
 
     @staticmethod
@@ -592,5 +607,6 @@ class AtlasMemoryStore:
                         tests_total=v.get("testsTotal", 0), verification_run_id=v["runId"]),
             applicability=Applicability.model_validate(doc.get("applicability") or {}),
             seeded=doc.get("seeded", False),
+            stale=bool(changed_files(doc["repositoryId"], doc.get("provenAgainst", []))),
             match=doc.get("_match"),
         )
