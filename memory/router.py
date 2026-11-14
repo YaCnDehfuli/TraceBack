@@ -74,10 +74,23 @@ def correct_memory(memory_id: str, body: CorrectBody, principal: AdminPrincipal)
 
 @router.post("/{memory_id}/expire", response_model=MemoryCard)
 def expire_memory(memory_id: str, body: ReasonBody, principal: AdminPrincipal) -> MemoryCard:
-    raise _todo("P2-6")
+    """Expire now (admin of the owner team, reason required). Recall stops returning it immediately."""
+    return _admin(lambda: store().expire_now(principal, memory_id, body.reason))
 
 
 @router.delete("/{memory_id}", response_model=MemoryCard)
 def forget_memory(memory_id: str, body: ReasonBody, principal: AdminPrincipal) -> MemoryCard:
-    """Forget: hard delete plus tombstone. Returns the grey "Forgotten" card (content erased)."""
-    raise _todo("P2-6")
+    """Forget: hard delete of every version plus a content-free tombstone (admin of the owner team,
+    reason required). Returns the grey "Forgotten" card (content erased)."""
+    return _admin(lambda: store().forget(principal, memory_id, body.reason))
+
+
+def _admin(action):
+    try:
+        return action()
+    except LookupError:  # same answer as "doesn't exist", so other teams can't probe ids
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No memory with that id for your team.") from None
+    except PermissionError as e:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(e)) from None
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from None
