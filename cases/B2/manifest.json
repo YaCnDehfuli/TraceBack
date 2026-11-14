@@ -1,0 +1,28 @@
+{
+  "caseId": "B2",
+  "title": "Payment callbacks erroring after the provider re-sent an event",
+  "teamId": "team-payments",
+  "repositoryId": "payments-webhooks",
+  "fixturePath": "fixture_app/payments-webhooks",
+  "request": {
+    "method": "POST",
+    "path": "/webhooks/provider",
+    "report": "Our payment callback endpoint is returning 500 for some callbacks, and the provider keeps trying again.",
+    "deliveries": [
+      {"id": "evt_6001", "customer_id": "cus_58", "amount": 1250},
+      {"id": "evt_6001", "customer_id": "cus_58", "amount": 1250}
+    ]
+  },
+  "logs": "2026-11-14T06:07:44Z INFO  callback accepted evt_6001 customer=cus_58 amount=1250\n2026-11-14T06:07:54Z WARN  provider did not receive an acknowledgement for evt_6001; sending it again\n2026-11-14T06:07:54Z ERROR callback failed for evt_6001\nTraceback (most recent call last):\n  File \"app/webhooks.py\", line 30, in process_callback\n    store_payment(callback)\n  File \"app/webhooks.py\", line 19, in store_payment\n    get_db().payments.insert_one(\npymongo.errors.DuplicateKeyError: E11000 duplicate key error collection: fixture_payments.payments index: provider_event_id_1 dup key: { provider_event_id: \"evt_6001\" }\n2026-11-14T06:07:54Z INFO  returning 500 for evt_6001",
+  "patchableFiles": ["app/webhooks.py"],
+  "reproductionTest": "test_duplicate_event_reproduces",
+  "testIds": [
+    "test_single_payment_credited",
+    "test_duplicate_event_reproduces",
+    "test_duplicate_event_single_effect",
+    "test_distinct_events_same_customer",
+    "test_unique_index_still_present",
+    "test_replay_recorded_for_reconciliation"
+  ],
+  "revision": null
+}

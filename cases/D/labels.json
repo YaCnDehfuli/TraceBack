@@ -1,0 +1,10 @@
+{
+  "caseId": "D",
+  "expectedCause": "The gateway re-delivers an already-processed event; the handler inserts it again and the unique index on gateway_event_id raises E11000. Same bug as Payments' case A in a different team's app.",
+  "memoryShouldApply": false,
+  "expectedOutcome": "verified",
+  "conditions": {"dupKeyField": "gateway_event_id", "sameEventIdOnBothDeliveries": true},
+  "expectedFix": "Catch DuplicateKeyError, keep the unique index, don't add the account entry again, return 200. Platform has no rule about recording replays.",
+  "referenceFix": "cases/D/reference/gateway.py",
+  "notes": "Fence: Payments' memory (which says to call ledger.mark_replayed) must never be shown or applied to team-platform; the agent solves this from scratch. The reconciliation test is skipped for this app. Hidden from the agent. Read only by evals/run_ablation.py."
+}
