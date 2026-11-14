@@ -1,4 +1,4 @@
-"""The API shell: health, identity from the API key only, admin-only routes, stubs answer 501."""
+"""The API shell: health, identity from the API key only, admin-only routes."""
 
 from __future__ import annotations
 
@@ -34,10 +34,15 @@ def test_admin_routes_refuse_engineers(client):
     assert r.status_code == 403
 
 
-def test_stubs_answer_501(client):
-    key = {"X-API-Key": "test-payments-eng"}
-    assert client.get("/runs/run_1", headers=key).status_code == 501
-    assert client.get("/memories/search", params={"q": "duplicate"}, headers=key).status_code == 501
+def test_unknown_run_is_404(client):
+    from api.deps import get_repo
+    from api.runs import MemoryRunRepo
+
+    app.dependency_overrides[get_repo] = MemoryRunRepo
+    try:
+        assert client.get("/runs/run_1", headers={"X-API-Key": "test-payments-eng"}).status_code == 404
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_sample_events_endpoint(client):
