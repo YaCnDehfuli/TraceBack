@@ -191,6 +191,64 @@
     if (ours()) slot.replaceChildren(list); // a run may have claimed the slot while we waited
   }
 
+  // ---------------------------------------------------------------- the Fence view (P2-5)
+  // The same search run with each team's demo key, side by side, plus what Platform's search WOULD
+  // return without the team filter (struck through; other teams' memories arrive redacted from the API),
+  // and the exact $vectorSearch pre-filter printed underneath.
+  const FENCE_QUERY = "Duplicate webhook delivery raises E11000 on provider_event_id; " +
+    "retry carries the same event identifier.";
+  const FENCE_KEYS = { payments: "key-payments-eng", platform: "key-platform-eng", admin: "key-platform-admin" };
+
+  function filterLine(filter) {
+    // { tenantId: "demo-org", readableBy: { $in: ["team-platform"] }, ... } on one line
+    return JSON.stringify(filter).replace(/"(\$?\w+)":/g, "$1: ").replace(/,/g, ", ").replace(/"now"/g, "now");
+  }
+
+  function fenceColumn(teamId, result) {
+    const t = team(teamId);
+    const head = el("div", "tb-fence-head", `${t.name} sees ${result.count}`);
+    head.style.color = t.color;
+    const body = result.count
+      ? el("ul", "tb-conds", ...result.memories.map((m) =>
+        el("li", "tb-cond", el("span", "tb-icon", "✓"), m.title, m.match ? el("span", "tb-muted", ` · ${m.match}`) : null)))
+      : el("p", "tb-muted", "Nothing your team may see.");
+    return el("div", "tb-fence-col", head, body);
+  }
+
+  async function renderFence(q) {
+    q = q || FENCE_QUERY;
+    const qs = `/memories/search?q=${encodeURIComponent(q)}`;
+    const as = (key) => ({ headers: { "X-API-Key": key } });
+    const [pay, plat, unscoped] = await Promise.all([
+      window.traceback.api(qs, as(FENCE_KEYS.payments)),
+      window.traceback.api(qs, as(FENCE_KEYS.platform)),
+      window.traceback.api(`/memories/compare-unscoped?q=${encodeURIComponent(q)}`, as(FENCE_KEYS.admin)),
+    ]);
+    const blocked = unscoped.memories.filter((m) => !(m.readableBy || []).includes("team-platform"));
+    const without = el("div", "tb-block",
+      el("div", "tb-label", "Without the team filter, Platform's search would return"),
+      blocked.length
+        ? el("ul", "tb-conds", ...blocked.map((m) => el("li", "tb-cond tb-struck",
+          el("span", "tb-icon", "✗"), el("s", null, m.title), el("span", "tb-muted", " · blocked inside the search"))))
+        : el("p", "tb-muted", "Nothing (no other team's memory matches)."));
+    return el("div", "tb-card tb-fence",
+      el("div", "tb-label", "Same search, two teams"),
+      el("div", "tb-fence-cols", fenceColumn("team-payments", pay), fenceColumn("team-platform", plat)),
+      without,
+      el("div", "tb-block", el("div", "tb-label", "$vectorSearch filter for Platform"),
+        el("code", "tb-filter", filterLine(plat.filter))));
+  }
+
+  async function showFence(q) {
+    const slot = document.getElementById("memory-slot");
+    if (!slot) return;
+    try {
+      slot.replaceChildren(await renderFence(q));
+    } catch (err) {
+      slot.replaceChildren(el("p", "tb-muted", `Fence view unavailable: ${err.message}`));
+    }
+  }
+
   // ---------------------------------------------------------------- styles (kept here so P3's page stays untouched)
   function injectStyles() {
     const css = `
@@ -222,6 +280,10 @@
       .tb-details { margin-top:8px; font-size:13px; color:#5b6670; }
       .tb-details dl { display:grid; grid-template-columns:max-content 1fr; gap:2px 12px; margin:6px 0 0; }
       .tb-details dt { font-weight:600; } .tb-details dd { margin:0; word-break:break-all; }
+      .tb-fence-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:8px 0; }
+      .tb-fence-head { font-size:20px; font-weight:700; margin-bottom:4px; }
+      .tb-struck s { color:#5b6670; } .tb-struck .tb-icon { color:#b42318; }
+      .tb-filter { display:block; font-size:12px; white-space:normal; word-break:break-word; padding:6px 8px; }
     `;
     document.head.appendChild(el("style", null, css));
   }
@@ -229,6 +291,8 @@
   // ---------------------------------------------------------------- wire up
   window.traceback.renderMemoryCard = renderMemoryCard;
   window.traceback.refreshMemories = refreshMemories;
+  window.traceback.renderFence = renderFence; // async (q?) -> node
+  window.traceback.showFence = showFence; // async (q?): puts the Fence view in #memory-slot (beat 4)
 
   injectStyles();
   setInterval(tick, 1000);
