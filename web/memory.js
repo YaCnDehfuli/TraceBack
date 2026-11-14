@@ -152,8 +152,89 @@
       details);
     card.style.borderTopColor = owner.color;
     card.dataset.memoryId = memory.memoryId;
+    card._memory = memory;
     updateExpiry(expiry);
+    attachAdmin(card); // async: only shows for an admin of the owner team
     return card;
+  }
+
+  // ---------------------------------------------------------------- admin drawer (P2-6)
+  // Forget and Expire now, only under an admin key of the owner team. Forget is always a person
+  // clicking a button with a typed reason (plan 6.4: never by voice, never by the agent).
+  const whoCache = {};
+  function whoami() {
+    const key = window.traceback.currentKey ? window.traceback.currentKey() : "";
+    if (!whoCache[key]) whoCache[key] = window.traceback.api("/whoami").catch(() => null);
+    return whoCache[key];
+  }
+
+  async function attachAdmin(card) {
+    const memory = card._memory;
+    card.querySelector(":scope > .tb-admin")?.remove();
+    const me = await whoami();
+    if (!me || me.role !== "memory_admin" || me.teamId !== memory.ownerTeamId) return;
+    card.querySelector(":scope > .tb-admin")?.remove(); // in case two checks raced
+
+    const reason = el("input", "tb-reason");
+    reason.type = "text";
+    reason.placeholder = "Reason (required)";
+    reason.setAttribute("aria-label", "Reason");
+    const expire = el("button", "tb-btn", "Expire now");
+    const forget = el("button", "tb-btn tb-danger", "Forget");
+    const msg = el("p", "tb-muted", "");
+    for (const b of [expire, forget]) { b.type = "button"; b.disabled = true; }
+    reason.addEventListener("input", () => { expire.disabled = forget.disabled = !reason.value.trim(); });
+
+    async function act(method, path, then) {
+      expire.disabled = forget.disabled = true;
+      msg.textContent = "Working…";
+      try {
+        const body = JSON.stringify({ reason: reason.value.trim() });
+        then(await window.traceback.api(path, { method, body }));
+      } catch (err) {
+        msg.textContent = `Failed: ${err.message}`;
+        expire.disabled = forget.disabled = false;
+      }
+    }
+    const id = encodeURIComponent(memory.memoryId);
+    expire.addEventListener("click", () => act("POST", `/memories/${id}/expire`, (updated) => {
+      card.replaceWith(renderMemoryCard(updated, {}));
+    }));
+    forget.addEventListener("click", () => act("DELETE", `/memories/${id}`, (tomb) => {
+      const gone = forgottenCard(tomb);
+      card.replaceWith(gone);
+      probeRecall(gone, memory.memoryId);
+      // For the run view (P3): e.g. rerun or show the compare view after Forget.
+      document.dispatchEvent(new CustomEvent("traceback:memory-forgotten", { detail: { memoryId: memory.memoryId, card: tomb } }));
+    }));
+
+    card.appendChild(el("div", "tb-admin",
+      el("div", "tb-label", `Admin · ${team(memory.ownerTeamId).name}`),
+      reason, el("div", "tb-admin-btns", expire, forget), msg));
+  }
+
+  // After Forget: show that recall really can't find it any more (the store's re-read guard makes
+  // this true at once, even while the vector index still lags for a few seconds).
+  async function probeRecall(node, memoryId) {
+    const line = el("p", "tb-line", "Checking recall…");
+    node.appendChild(line);
+    try {
+      const res = await window.traceback.api(`/memories/search?q=${encodeURIComponent(FENCE_QUERY)}`);
+      const still = res.memories.some((m) => m.memoryId === memoryId);
+      line.textContent = still ? "Recall still returns it (index lag): retrying…" : "Recall: 0 candidates · unsearchable";
+      if (still) setTimeout(() => { line.remove(); probeRecall(node, memoryId); }, 1000);
+    } catch (err) {
+      line.textContent = `Recall check failed: ${err.message}`;
+    }
+  }
+
+  // Key 5 switches engineer -> admin without changing the team, so watch the key itself.
+  let lastKey = null;
+  function refreshAdminDrawers() {
+    const key = window.traceback.currentKey ? window.traceback.currentKey() : null;
+    if (key === lastKey) return;
+    lastKey = key;
+    document.querySelectorAll(".tb-card[data-memory-id]").forEach((c) => { if (c._memory) attachAdmin(c); });
   }
 
   function updateExpiry(node) {
@@ -168,6 +249,7 @@
 
   function tick() {
     document.querySelectorAll(".tb-expiry").forEach(updateExpiry);
+    refreshAdminDrawers();
   }
 
   // ---------------------------------------------------------------- the panel
@@ -283,6 +365,11 @@
       .tb-fence-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:8px 0; }
       .tb-fence-head { font-size:20px; font-weight:700; margin-bottom:4px; }
       .tb-struck s { color:#5b6670; } .tb-struck .tb-icon { color:#b42318; }
+      .tb-admin { margin-top:12px; padding-top:10px; border-top:1px dashed #c5ccd3; }
+      .tb-admin .tb-reason { width:100%; margin:6px 0; font-size:14px; padding:6px 8px; height:auto; }
+      .tb-admin-btns { display:flex; gap:8px; }
+      .tb-admin .tb-btn { flex:1; font-size:14px; padding:6px 10px; margin:0; }
+      .tb-admin .tb-danger { background:#b42318; border-color:#b42318; color:#fff; }
       .tb-filter { display:block; font-size:12px; white-space:normal; word-break:break-word; padding:6px 8px; }
     `;
     document.head.appendChild(el("style", null, css));
@@ -293,6 +380,7 @@
   window.traceback.refreshMemories = refreshMemories;
   window.traceback.renderFence = renderFence; // async (q?) -> node
   window.traceback.showFence = showFence; // async (q?): puts the Fence view in #memory-slot (beat 4)
+  // Forget fires document event "traceback:memory-forgotten" with detail {memoryId, card}.
 
   injectStyles();
   setInterval(tick, 1000);
