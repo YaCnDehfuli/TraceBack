@@ -51,7 +51,7 @@ from .policy import expiry_for, get_policy
 
 NUM_CANDIDATES = 100
 VECTOR_LIMIT = 5
-STRONG_MATCH = 0.80  # display only: "match: strong/weak", never a raw score on screen
+STRONG_MATCH = 0.88  # display only: "match: strong/weak", never a raw score on screen (cutoff is 0.83)
 HIDDEN = {"embedding": 0}  # hmacSecret is read for audit hashes, then stripped before returning
 
 
