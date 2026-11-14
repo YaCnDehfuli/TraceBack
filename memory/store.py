@@ -215,8 +215,7 @@ class AtlasMemoryStore:
             details["verification"] = {"runId": v.run_id, "status": v.status, "testsPassed": v.tests_passed,
                                        "testsTotal": len(v.tests)}
 
-        readable = {"tenantId": p.tenant_id, "readableBy": {"$in": [p.team_id]}}  # any status
-        doc = self.memories.find_one({"_id": memory_id, **readable}, {"embedding": 0})
+        doc = self.memories.find_one({"_id": memory_id, **self.readable(p)}, {"embedding": 0})
         if doc is None:
             audit.log(self.db, tenant_id=p.tenant_id, event="use_ignored", actor=actor, memory_id=memory_id,
                       version=version, run_id=run_id, reason="memory no longer readable", details=details)
