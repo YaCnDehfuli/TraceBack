@@ -128,7 +128,7 @@ The live agent, Atlas memory and the demo identities need the `.env` file (see `
 - **Seeded distractors.** Extra memories added to make vector search realistic are labelled `seeded`.
 - **The sample replay (`0`)** is a recording, and the page says "Replay".
 - **Proof is only as strong as the tests.** A memory is written only after tests the agent can't edit go from failing to passing. In a real team that gate would be the required CI checks. A weak test suite would let a weak fix in. It happened here once: the agent's first fix for case C created an index inside the request handler. The fix was two new trusted tests (`test_handler_does_not_change_indexes`, and one record per event in `test_distinct_events_same_customer`). The memory code didn't change.
-- **One bug family.** Duplicate-key retries, on two apps. The applicability conditions are a fixed, typed list (`dup_key_field`, `same_event_id_on_both_deliveries`). Their values are filled in from the parsed error when a memory is saved, and checked in plain code. Supporting another family means adding its error parser and condition fields. We make no claim about other bugs.
+- **One bug family.** Duplicate-key retries, on two apps. The applicability conditions are a fixed, typed list (`dup_key_field`, `same_event_id_on_both_deliveries`). Their values are filled in from the parsed error and delivery IDs when a memory is saved, and checked in plain code. Supporting another family means adding its error parser and condition fields. We make no claim about other bugs.
 
 ### How this compares (checked 2026-11-14)
 
