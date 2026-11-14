@@ -406,6 +406,8 @@
         const text = p.outcome === "renewed" ? "Receipt renewed: proven again today." : p.message || `Memory ${p.outcome}`;
         addStep(refused ? "ban" : "receipt-text", text, { tone: refused ? "bad" : "memory" });
         if (refused) stamp("refused");
+        // P2 (R11): Atlas refused the write -> show the refusal receipt (failing test, "Nothing was stored").
+        if (p.outcome === "refused" && window.traceback.showRefusal) window.traceback.showRefusal(event.runId);
         if (p.memory) showMemory(p.memory);
         break;
       }
@@ -630,6 +632,9 @@
     "5": () => { applyIdentity("key-payments-admin"); $("memory-panel").scrollIntoView({ behavior: smooth }); }, // Forget
     "0": () => replaySample(),
     c: () => ($("compare").hidden ? showCompare("B") : hideCompare()), // compare with vs without memory
+    // P2 views (web/memory.js), into the memory panel:
+    f: () => window.traceback.showFence && window.traceback.showFence(), // "Payments sees 1 / Platform sees 0" + filter
+    r: () => window.traceback.showRefusal && window.traceback.showRefusal(), // latest "Memory refused: no proof." (R11)
   };
 
   const chip = (key) => document.querySelector(`#keys button[data-key="${key}"]`);
