@@ -1,0 +1,10 @@
+{
+  "caseId": "B2",
+  "expectedCause": "Same mechanism as case A with different wording; the insert lives in a helper (store_payment) and a re-sent event is inserted again, so the unique index on provider_event_id raises E11000.",
+  "memoryShouldApply": true,
+  "expectedOutcome": "verified",
+  "conditions": {"dupKeyField": "provider_event_id", "sameEventIdOnBothDeliveries": true},
+  "expectedFix": "Catch DuplicateKeyError (in the helper or the handler), keep the unique index, don't credit again, call ledger.mark_replayed(callback.id), return 200.",
+  "referenceFix": "cases/B2/reference/webhooks.py",
+  "notes": "Experiment repeat of B. Hidden from the agent. Read only by evals/run_ablation.py."
+}
