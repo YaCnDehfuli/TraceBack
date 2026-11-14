@@ -1,0 +1,4 @@
+# Same line endings for macOS, Linux and Windows teammates.
+* text=auto eol=lf
+*.png binary
+*.jpg binary

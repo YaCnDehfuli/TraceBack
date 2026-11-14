@@ -1,0 +1,12 @@
+{
+  "caseId": "X",
+  "teamId": "team-payments",
+  "repositoryId": "payments-webhooks",
+  "fixturePath": "fixture_app/payments-webhooks",
+  "request": {"method": "POST", "path": "/webhooks/provider", "body": {"id": "evt_123", "customerId": "cus_42", "amount": 1999}},
+  "logs": "E11000 duplicate key error collection: shop.payments index: provider_event_id_1 dup key: { provider_event_id: \"evt_123\" }",
+  "patchableFiles": ["app/webhooks.py"],
+  "reproductionTest": "test_duplicate_event_reproduces",
+  "testIds": [],
+  "revision": null
+}
