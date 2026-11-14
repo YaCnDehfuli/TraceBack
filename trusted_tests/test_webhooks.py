@@ -45,6 +45,20 @@ def test_distinct_events_same_customer(client, db, names):
     assert credited(db, names, "cus_42") == 5000, (
         "two different events from the same customer must both be credited"
     )
+    for event_id in ("evt_1001", "evt_1002"):
+        assert db[names["payments"]].count_documents({names["event_field"]: event_id}) == 1, (
+            f"each provider event must keep its own payment record ({event_id} is missing or merged)"
+        )
+
+
+def test_handler_does_not_change_indexes(client, db, names):
+    before = db[names["payments"]].index_information()
+    post(client, names, EVENT)
+    post(client, names, EVENT)
+    post(client, names, {**EVENT, "id": "evt_1002"})
+    assert db[names["payments"]].index_information() == before, (
+        "request handlers must not create or drop indexes; schema changes belong in app/db.py"
+    )
 
 
 def test_unique_index_still_present(client, db, names):
