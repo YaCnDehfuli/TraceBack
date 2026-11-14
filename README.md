@@ -9,14 +9,12 @@ fix with tests it cannot see, and only then remembers it. The memory is searched
 Vector Search, fenced to the team that earned it, checked in code before reuse, and it expires,
 can be corrected, and can be forgotten for good.
 
-[Results](evals/results/results.md) · [Demo runbook](docs/DEMO.md) · [Governed memory](docs/README_P2.md) · [Test world and runner](docs/README_P3.md) · [Design](docs/TEAM_GUIDE.md)
+[Results](evals/results/results.md)
 
 [![CI](https://github.com/YaCnDehfuli/TraceBack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/YaCnDehfuli/TraceBack/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![MongoDB Atlas](https://img.shields.io/badge/MongoDB_Atlas-Vector_Search-00684A?logo=mongodb&logoColor=white)](memory/store.py)
-[![Built at](https://img.shields.io/badge/Built_at-Agents_in_Context_Toronto-0E7490)](docs/SUBMISSION.md)
-
-![One Traceback run: incident, recall with a team filter inside Atlas Vector Search, conditions checked in code, the LLM's fix, trusted tests, and a memory write that Atlas refuses without proof](docs/assets/traceback-flow.svg)
+![Built at](https://img.shields.io/badge/Built_at-Agents_in_Context_Toronto-0E7490)
 
 </div>
 
@@ -104,7 +102,7 @@ uv run python scripts/demo.py                         # API and UI on http://loc
 
 In the UI, `Shift+2` starts a live Reuse run, `Shift+3` the look-alike, `Shift+4` a run as the
 Platform team (Payments' memory stays fenced off), `F` the fence view, and `0` a recorded run that
-needs no network. The full key map is in the [demo runbook](docs/DEMO.md).
+needs no network. The full key map is in the demo runbook.
 
 | Command | What it does |
 |---|---|
