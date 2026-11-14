@@ -157,7 +157,14 @@ def handle_provider_event(notification: PaymentNotification) -> dict:
     }).filter((x) => Number.isInteger(x) && x >= 1 && x <= lines.length);
     const set = new Set(marks);
     let from, to;
-    if (marks.length) { from = Math.max(1, Math.min(...marks) - 3); to = Math.min(lines.length, Math.max(...marks) + 3); }
+    // Focus on the last cluster of memory lines (gaps of 3 or less): that's where the remembered rule is
+    // (e.g. except DuplicateKeyError -> ledger.mark_replayed), not the imports at the top of the file.
+    if (marks.length) {
+      const sorted = [...marks].sort((a, b) => a - b);
+      let start = sorted.length - 1;
+      while (start > 0 && sorted[start] - sorted[start - 1] <= 3) start--;
+      from = Math.max(1, sorted[start] - 1); to = Math.min(lines.length, sorted[sorted.length - 1] + 1);
+    }
     else { from = 1; to = Math.min(lines.length, 12); }
     const box = document.createElement("div");
     box.className = "code";

@@ -168,8 +168,9 @@ def _summary(verdict: str, mode: str, deliveries: list[dict], credited: int, exp
         return (f"{who} crashed on delivery {bad['n']} ({bad['eventId']}) with a server error, "
                 "so the provider keeps retrying.")
     if verdict == "double-credited":
-        return f"{who} credited {credited} instead of {expected}: the customer's balance is wrong."
-    return f"{who} answered every delivery and credited {credited}, exactly once per event."
+        return (f"{who} credited ${credited / 100:,.2f} instead of ${expected / 100:,.2f}: "
+                "the customer's balance is wrong.")
+    return f"{who} answered every delivery and credited ${credited / 100:,.2f}, exactly once per event."
 
 
 @app.post("/api/replay")
