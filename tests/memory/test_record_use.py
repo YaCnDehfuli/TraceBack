@@ -99,3 +99,22 @@ def test_other_team_or_vanished_memory_is_ignored_not_raised(mem, platform):
     assert s.memories.find_one({"_id": mem_id})["status"] == "active"
     assert s.record_use(platform, "mem_gone", 1, "run_p", d) is None
     s.db.memory_audit.delete_many({"memoryId": "mem_gone"})
+
+
+def test_run_in_flight_never_revives_an_expired_memory(mem, payments):
+    """An admin's "expire now" during a run must stick, even if the run's fix then verifies."""
+    s, mem_id = mem
+    gone = utc_now() - timedelta(seconds=1)
+    s.memories.update_one({"_id": mem_id}, {"$set": {"expiresAt": gone}})
+    d = MemoryUseDecision(decision="used", preconditions=HELD, reason="ok", verification=proof())
+    assert s.record_use(payments, mem_id, 1, "run_late", d) is None
+    assert s.memories.find_one({"_id": mem_id})["expiresAt"] <= gone + timedelta(milliseconds=1)
+    assert "not_renewed" in events(s, mem_id)
+
+
+def test_disputed_memory_is_not_renewed(mem, payments):
+    s, mem_id = mem
+    s.memories.update_one({"_id": mem_id}, {"$set": {"status": "disputed"}})
+    d = MemoryUseDecision(decision="used", preconditions=HELD, reason="ok", verification=proof())
+    assert s.record_use(payments, mem_id, 1, "run_late", d) is None
+    assert s.memories.find_one({"_id": mem_id})["status"] == "disputed"

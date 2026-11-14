@@ -241,14 +241,24 @@ class AtlasMemoryStore:
             policy = get_policy(self.db, doc["tenantId"], doc["ownerTeamId"])
             if not policy["renewOnReverify"]:
                 return None
-            new_exp, new_purge = expiry_for(policy, doc["createdAt"], utc_now())
-            if new_exp <= doc["expiresAt"]:  # never shorten; at max lifetime this is a no-op
+            now = utc_now()
+            new_exp, new_purge = expiry_for(policy, doc["createdAt"], now)
+            # Only a memory that is STILL active and unexpired is renewed, checked atomically in the
+            # update: a run in flight must never undo an admin's "expire now", a dispute or a revoke.
+            res = self.memories.update_one(
+                {"_id": memory_id, "status": "active", "expiresAt": {"$gt": now, "$lt": new_exp}},
+                {"$set": {"expiresAt": new_exp, "purgeAt": new_purge}},
+            )
+            if res.modified_count:
+                log("renewed", extra={"from": doc["expiresAt"], "expiresAt": new_exp, "purgeAt": new_purge})
+                return "renewed"
+            live = self.memories.find_one({"_id": memory_id, "status": "active", "expiresAt": {"$gt": now}},
+                                          {"_id": 1})
+            if live:  # still valid, already at its max lifetime: nothing to extend
                 log("renewed", extra={"expiresAt": doc["expiresAt"], "capped": True})
                 return "renewed"
-            self.memories.update_one({"_id": memory_id, "status": "active"},
-                                     {"$set": {"expiresAt": new_exp, "purgeAt": new_purge}})
-            log("renewed", extra={"from": doc["expiresAt"], "expiresAt": new_exp, "purgeAt": new_purge})
-            return "renewed"
+            log("not_renewed", reason="expired, disputed or revoked while the run was in flight")
+            return None
 
         # Applied and verification failed.
         held = bool(d.preconditions) and all(r.held is True for r in d.preconditions)
@@ -256,7 +266,10 @@ class AtlasMemoryStore:
             # Conditions weren't all confirmed, so the failure isn't evidence against the memory.
             log("used", extra={"verificationFailed": True})
             return None
-        self.memories.update_one({"_id": memory_id, "status": "active"}, {"$set": {"status": "disputed"}})
+        res = self.memories.update_one({"_id": memory_id, "status": "active"}, {"$set": {"status": "disputed"}})
+        if not res.modified_count:  # already disputed / revoked / superseded by someone else
+            log("used", extra={"verificationFailed": True, "statusAlready": doc["status"]})
+            return None
         log("disputed", reason=d.reason or "conditions held but the remembered fix failed verification")
         return "disputed"
 
