@@ -234,3 +234,74 @@ def test_reproduce_also_cleans_up(private_tmp):
     assert result.before_failed
     assert not list(private_tmp.glob("traceback_*")), "temp workspace left behind by reproduce()"
     assert not _fixture_databases(f"fixture_{result.run_id}"), "fixture database left behind by reproduce()"
+
+
+# --------------------------------------------------------------------------- 9. edge cases (static review)
+
+
+def test_a_patch_that_does_not_import_is_failed_not_inconclusive():
+    # The trusted conftest imports the app, so a syntax error makes pytest stop with exit code 4.
+    # That is the patch's fault, not our infrastructure: "failed", never "inconclusive".
+    result = runner.verify("A", _patch_for("A", "def receive(:\n    pass\n"))
+    assert result.status == "failed", _describe(result)
+    assert result.before_failed and not result.after_passed
+    assert result.detail and "SyntaxError" in result.detail, _describe(result)
+
+
+def test_a_patch_that_hangs_is_still_inconclusive(monkeypatch):
+    calls = []
+    real_run = subprocess.run
+
+    def run(cmd, **kwargs):
+        calls.append(cmd)
+        if len(calls) == 2:  # the after-patch run times out
+            raise subprocess.TimeoutExpired(cmd, sandbox.TIMEOUT_S)
+        return real_run(cmd, **kwargs)
+
+    monkeypatch.setattr(sandbox.subprocess, "run", run)
+    result = runner.verify("A", _reference_patch("A"))
+    assert result.status == "inconclusive", _describe(result)
+
+
+def test_malformed_junit_is_inconclusive_not_a_crash(monkeypatch, private_tmp):
+    def run(cmd, **kwargs):
+        junit = next(a for a in cmd if a.startswith("--junitxml=")).split("=", 1)[1]
+        Path(junit).write_text("<testsuites><testsuite><testcase name='x'>", encoding="utf-8")  # cut off
+        return subprocess.CompletedProcess(cmd, 1, "", "")
+
+    monkeypatch.setattr(sandbox.subprocess, "run", run)
+    result = runner.reproduce("A")
+    assert result.status == "inconclusive", _describe(result)
+    assert not list(private_tmp.glob("traceback_*"))
+
+
+def test_a_reproduction_that_only_errors_is_inconclusive(monkeypatch, private_tmp):
+    # A setup error (e.g. the database fixture) is not the bug reproducing.
+    def run(cmd, **kwargs):
+        junit = next(a for a in cmd if a.startswith("--junitxml=")).split("=", 1)[1]
+        Path(junit).write_text(
+            "<testsuites><testsuite><testcase name='test_duplicate_event_reproduces'>"
+            "<error message='failed on setup with ServerSelectionTimeoutError'/></testcase></testsuite></testsuites>",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(cmd, 1, "", "")
+
+    monkeypatch.setattr(sandbox.subprocess, "run", run)
+    assert runner.reproduce("A").status == "inconclusive"
+    assert runner.verify("A", _reference_patch("A")).status == "inconclusive"
+
+
+def test_a_failing_second_workspace_does_not_leak_the_first(monkeypatch, private_tmp):
+    real_workspace = sandbox._workspace
+    made = []
+
+    def workspace(case_id, manifest):
+        if made:
+            raise OSError("disk full")
+        made.append(real_workspace(case_id, manifest))
+        return made[-1]
+
+    monkeypatch.setattr(sandbox, "_workspace", workspace)
+    with pytest.raises(OSError):
+        runner.verify("A", _reference_patch("A"))
+    assert made and not made[0].exists(), "the first workspace was left behind"

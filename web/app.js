@@ -589,7 +589,7 @@
     const token = ++followToken;
     resetView(caseId);
     hideCompare();
-    let after = 0;
+    let after = 0, sawError = false;
     setLive("live");
     setStatus("Following the live run");
     while (token === followToken) {
@@ -598,6 +598,12 @@
         events = await api(`/runs/${encodeURIComponent(runId)}/events?after=${after}`);
       } catch (err) {
         console.warn("Traceback: polling run events failed", err);
+        // 404: a run saved before a server restart, or another team's run: don't poll it forever.
+        if (err.status === 404 && token === followToken) {
+          setLive(null);
+          setStatus("Run not found for this identity. Shift + its key starts a new one.");
+          return;
+        }
         setStatus("Connection lost. Retrying…");
       }
       for (const event of events) {
@@ -611,10 +617,14 @@
           return;
         }
       }
-      // Safety net: a run that died without run_finished must not be followed forever.
-      if (events.some((e) => e.type === "error")) {
+      // Safety net: a run that died without run_finished must not be followed forever. Keep checking after
+      // the error event: the run's status may turn "error" a poll or two later.
+      sawError = sawError || events.some((e) => e.type === "error");
+      if (sawError && token === followToken) {
         try {
-          if ((await api(`/runs/${encodeURIComponent(runId)}`)).status === "error") {
+          const view = await api(`/runs/${encodeURIComponent(runId)}`);
+          if (token !== followToken) return; // a newer run took the screen while we waited
+          if (view.status === "error") {
             setLive("done");
             setStatus("Run stopped");
             return;
@@ -789,6 +799,7 @@
   }
 
   function runBeat(key, force) {
+    if (key !== "c" && !$("compare").hidden) hideCompare(); // F, R, 5... would otherwise draw under the overlay
     BEATS[key](force);
     const button = chip(key);
     if (!button) return;
@@ -802,7 +813,7 @@
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return; // a held Shift+1 must not start a run per repeat
     const tag = (e.target && e.target.tagName) || "";
     if (["INPUT", "TEXTAREA", "SELECT"].includes(tag) || (e.target && e.target.isContentEditable)) return;
     if (e.key === "Escape" && !$("compare").hidden) {
