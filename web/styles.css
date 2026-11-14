@@ -251,8 +251,9 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 #memory-slot:is([data-stamp="not-applied"], [data-stamp="refused"]) > :not(.stamp) { filter: grayscale(1); opacity: 0.6; transition: filter 0.3s, opacity 0.3s; }
 
 /* Rubber stamps. Only stamps overshoot: they land from 1.6x. */
+/* Top-right corner: it covers only the receipt's decorative header, never a line a judge must read. */
 .stamp, #memory-slot .tb-forgotten::after {
-  position: absolute; bottom: 22%; left: 36%; z-index: 2;
+  position: absolute; top: 0.4rem; right: 0.6rem; z-index: 2;
   padding: 0.1rem 0.8rem; border: 4px solid currentColor; border-radius: 0.45rem;
   color: var(--stamp, var(--void)); background: color-mix(in srgb, var(--paper) 40%, transparent);
   font: 800 1.35rem/1.25 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
@@ -263,7 +264,7 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 .stamp.refused { --stamp: var(--bad); }
 .stamp.not-applied { --stamp: var(--warn); }
 .stamp.still { animation: none; }
-#memory-slot .tb-forgotten::after { content: "Void"; bottom: 30%; }
+#memory-slot .tb-forgotten::after { content: "Void"; }
 @keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(1.6); } }
 
 /* ------------------------------------------------------------------ compare overlay (key c, Esc closes) */
