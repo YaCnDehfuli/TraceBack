@@ -745,6 +745,11 @@ def worker(case_id: str, arm: str, repeat: int, out: Path, *, timeout_s: float, 
     return 0 if rec["error"] is None else 1
 
 
+# The API's agent settings for every experiment run (core/config.py): the real runner and Atlas, with no
+# silent fallback to fakes (the server refuses to start instead), and no new memories from a run.
+AGENT_ENV = {"AGENT_RUNNER": "local", "AGENT_STORE": "atlas", "AGENT_PROMOTE": "false"}
+
+
 def subprocess_run_one(*, model: str | None, timeout_s: float, wait_index_s: int) -> Callable[[PlannedRun], dict]:
     """Each run in its own Python process with MONGODB_DB=<its eval db>: no cached settings, client or
     service can leak from one run (or from the parent) into another."""
@@ -753,7 +758,7 @@ def subprocess_run_one(*, model: str | None, timeout_s: float, wait_index_s: int
         fd, tmp = tempfile.mkstemp(prefix=f"{p.db}_", suffix=".json")
         os.close(fd)
         out = Path(tmp)
-        env = {**os.environ, "MONGODB_DB": p.db, "PYTHONIOENCODING": "utf-8"}
+        env = {**os.environ, **AGENT_ENV, "MONGODB_DB": p.db, "PYTHONIOENCODING": "utf-8"}
         if model:
             env["LLM_MODEL"] = model
         cmd = [sys.executable, "-m", "evals.run_ablation", "--worker", "--case", p.case, "--arm", p.arm,
@@ -871,7 +876,9 @@ def main(argv: list[str] | None = None) -> int:
                      "set up with `scripts/atlas_setup.py`, run in its own process with `MONGODB_DB` set to it"
                      + (", kept afterwards (--keep)" if a.keep else ", dropped afterwards")
                      + "), so no run's memory renewals, disputes or promotions reached another run, and the "
-                     "demo and team databases were not touched.")
+                     "demo and team databases were not touched. Agent settings: "
+                     + ", ".join(f"`{k}={v}`" for k, v in AGENT_ENV.items())
+                     + " (real runner and Atlas, no fallback to fakes; runs never create new memories).")
 
     labels = {c: load_labels(c) for c in a.cases}
     scores = [score_run(r, labels[r["case"]], raw_placebos) for r in records]

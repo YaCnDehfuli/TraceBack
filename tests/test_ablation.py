@@ -281,6 +281,25 @@ def test_worker_failure_without_events_is_error():
     assert ab.score_run(rec, LABELS_B)["validity"] == "ERROR"
 
 
+def test_worker_runs_with_the_real_runner_atlas_and_no_promotion(monkeypatch):
+    """The parent's .env can't loosen these: AGENT_RUNNER/STORE refuse fakes, AGENT_PROMOTE keeps memory fixed."""
+    monkeypatch.setenv("AGENT_RUNNER", "auto")
+    monkeypatch.setenv("AGENT_PROMOTE", "true")
+    seen = {}
+
+    def fake_run(cmd, **kwargs):
+        seen.update(kwargs["env"])
+        raise ab.subprocess.TimeoutExpired(cmd, 0)
+
+    monkeypatch.setattr(ab.subprocess, "run", fake_run)
+    run_one = ab.subprocess_run_one(model=None, timeout_s=1, wait_index_s=1)
+    with pytest.raises(ab.subprocess.TimeoutExpired):
+        run_one(ab.PlannedRun("B", "off", 1, "traceback_eval_1_b_off_1"))
+    expected = {"AGENT_RUNNER": "local", "AGENT_STORE": "atlas", "AGENT_PROMOTE": "false"}
+    assert {k: seen[k] for k in expected} == expected
+    assert seen["MONGODB_DB"] == "traceback_eval_1_b_off_1"
+
+
 # =========================================================================== results
 
 
