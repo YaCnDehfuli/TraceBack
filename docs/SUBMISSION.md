@@ -35,7 +35,7 @@ Five beats, each one verb:
 - **Fence.** Another team's engineer asks the same question and gets nothing. The team filter runs inside the Atlas vector search, so other teams' memories are never candidates.
 - **Forget.** An admin of the owning team deletes the memory with a reason. Every version is removed and only a tombstone with no content is left. The rerun then loses the line that came from memory.
 
-Also built: admin **correction with version history** (a correction adds a new version, and every version stays in the history), a **Stale chip** when the code changes after a memory was proven, and the **"Memory refused: no proof" receipt** for a refused write.
+Also built: admin **correction with version history** (a correction adds a new version, and every version stays in the history), a **Stale chip** when the code changes after a memory was proven, and the **"Memory refused: no proof" receipt** for a refused write. A **live practice-app view** (`scripts/live_app.py`, `web/live.html`) replays the provider's real deliveries against the original code (HTTP 500, E11000) and against the run's own verified fix (200, credited once, replay recorded).
 
 ## 5. How it's built
 
