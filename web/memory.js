@@ -104,7 +104,9 @@
     chips.appendChild(ownerChip);
     if (STATUS_LABEL[memory.status]) chips.appendChild(el("span", "tb-chip tb-warn", STATUS_LABEL[memory.status]));
     if (memory.stale) chips.appendChild(el("span", "tb-chip tb-warn", "Stale: code changed since this was proven"));
-    if (memory.match) chips.appendChild(el("span", "tb-chip tb-plain", `match: ${memory.match}`));
+    // GET /memories/{id} has no match; during a run app.js passes the recall's match in context.
+    const match = memory.match || (context && context.match);
+    if (match) chips.appendChild(el("span", "tb-chip tb-plain", `match: ${match}`));
     if (memory.seeded) chips.appendChild(el("span", "tb-chip tb-plain", "seeded"));
 
     const p = memory.proof || {};
