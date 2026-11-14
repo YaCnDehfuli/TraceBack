@@ -83,6 +83,8 @@ Never name a Python module `traceback`: it would shadow Python's built-in `trace
 - [`evals/results/results.md`](evals/results/results.md): the memory experiment (off, placebo, real). This is a
   **historical** run. It was generated before trusted test 7 and before the code-facts recall change.
   A fresh validation is pending on [#60](https://github.com/YaCnDehfuli/TraceBack/pull/60) (`add769c`).
+- [`evals/results/case_c/`](evals/results/case_c/README.md): the look-alike case C after trusted test 7, with and
+  without memory. All 4 runs escalated, the right outcome for C, and none saved a fix.
 
 ## Rules for this repository
 
