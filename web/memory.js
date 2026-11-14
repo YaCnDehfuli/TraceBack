@@ -110,7 +110,7 @@
     ownerChip.style.background = owner.color;
     chips.appendChild(ownerChip);
     if (STATUS_LABEL[memory.status]) chips.appendChild(el("span", "tb-chip tb-warn", STATUS_LABEL[memory.status]));
-    if (memory.stale) chips.appendChild(el("span", "tb-chip tb-warn", "Stale: code changed since this was proven"));
+    if (memory.stale) chips.appendChild(staleChip());
     // GET /memories/{id} has no match; during a run app.js passes the recall's match in context.
     const match = memory.match || (context && context.match);
     if (match) chips.appendChild(el("span", "tb-chip tb-plain", `match: ${match}`));
@@ -286,6 +286,28 @@
     refreshAdminDrawers();
   }
 
+  // ---------------------------------------------------------------- staleness (R12)
+  // Every 5 s, ask whether the code each visible memory was proven on has changed, and flip its
+  // "Stale" chip live (edit one line of webhooks.py and the card flips). Unaudited endpoint.
+  function staleChip() {
+    return el("span", "tb-chip tb-warn tb-stale", "Stale: code changed since this was proven");
+  }
+
+  async function refreshStaleness() {
+    const cards = [...document.querySelectorAll(".tb-card[data-memory-id]")].filter((c) => c.isConnected);
+    for (const card of cards) {
+      try {
+        const r = await window.traceback.api(`/memories/${encodeURIComponent(card.dataset.memoryId)}/stale`);
+        const chip = card.querySelector(".tb-stale");
+        if (r.stale && !chip) card.querySelector(".tb-chips")?.appendChild(staleChip());
+        if (!r.stale && chip) chip.remove();
+        if (card._memory) card._memory.stale = r.stale;
+      } catch (_) {
+        // not readable under the current key, or the API is down: leave the card as it is
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- the panel
   // Idle state only: when no run is on screen, #memory-slot lists the caller's team's memories.
   // During a run, app.js (P3) owns the slot and calls renderMemoryCard for the run's memory;
@@ -365,6 +387,39 @@
     }
   }
 
+  // ---------------------------------------------------------------- refusal receipt (R11)
+  // "Memory refused: no proof." The fix failed verification, so Atlas's validator refused the write.
+  // Nothing was stored: the receipt shows only facts from the audit log (run, case, failing tests).
+  function renderRefusal(ev) {
+    const d = ev.details || {};
+    const failed = d.failedTests || [];
+    const card = el("div", "tb-card tb-refused",
+      el("div", "tb-label", "Memory write · refused by the database"),
+      el("div", "tb-title", "Memory refused: no proof."),
+      el("p", "tb-line tb-bad", `✗ Verification ${d.status || "failed"}: ` +
+        `${d.testsPassed ?? "?"}/${d.testsTotal ?? "?"} tests pass after the fix`),
+      failed.length ? el("div", "tb-block", el("div", "tb-label", "Failing"),
+        el("ul", "tb-conds", ...failed.map((t) => el("li", "tb-cond tb-bad", el("span", "tb-icon", "✗"), t)))) : null,
+      el("p", "tb-line", "Atlas's schema validator requires failed-before and passed-after. Nothing was stored."),
+      el("p", "tb-muted", `${d.caseId ? `Case ${d.caseId} · ` : ""}run ${ev.runId || "?"} · ${new Date(ev.at).toLocaleTimeString()}`));
+    card.appendChild(el("div", "stamp refused", "Refused")); // P3's stamp style (styles.css)
+    return card;
+  }
+
+  async function showRefusal(runId) {
+    const slot = document.getElementById("memory-slot");
+    if (!slot) return null;
+    try {
+      const list = await window.traceback.api("/memories/refusals?limit=10");
+      const ev = runId ? list.find((e) => e.runId === runId) : list[0];
+      slot.replaceChildren(ev ? renderRefusal(ev) : el("p", "tb-muted", "No refused memory writes for your team."));
+      return ev || null;
+    } catch (err) {
+      slot.replaceChildren(el("p", "tb-muted", `Refusals unavailable: ${err.message}`));
+      return null;
+    }
+  }
+
   // ---------------------------------------------------------------- styles (kept here so P3's page stays untouched)
   function injectStyles() {
     const css = `
@@ -406,6 +461,7 @@
       .tb-admin .tb-danger { background:#b42318; border-color:#b42318; color:#fff; }
       .tb-admin .tb-plain-btn { background:transparent; color:inherit; border:1px solid #c5ccd3; }
       .tb-history { font-size:13px; margin:8px 0 0; padding-left:1.2em; } .tb-history li { margin:2px 0; }
+      .tb-refused { position:relative; } .tb-refused .tb-title { color:#b42318; }
       .tb-filter { display:block; font-size:12px; white-space:normal; word-break:break-word; padding:6px 8px; }
     `;
     document.head.appendChild(el("style", null, css));
@@ -417,9 +473,12 @@
   window.traceback.renderFence = renderFence; // async (q?) -> node
   window.traceback.showFence = showFence; // async (q?): puts the Fence view in #memory-slot (beat 4)
   // Forget fires document event "traceback:memory-forgotten" with detail {memoryId, card}.
+  window.traceback.renderRefusal = renderRefusal; // (auditEvent) -> node
+  window.traceback.showRefusal = showRefusal; // async (runId?): latest (or that run's) refusal into #memory-slot
 
   injectStyles();
   setInterval(tick, 1000);
+  setInterval(refreshStaleness, 5000);
   document.addEventListener("DOMContentLoaded", () => {
     // app.js sets <body class="team-…"> on every identity change (the pill AND keys 4/5),
     // so watching the body class catches all of them.

@@ -38,6 +38,13 @@ def search_memories(q: str, principal: CurrentPrincipal) -> MemorySearchResult:
                               filter=s.printable_scope(principal))
 
 
+@router.get("/refusals")
+def recent_refusals(principal: CurrentPrincipal, limit: int = 5) -> list[dict]:
+    """Writes Atlas refused for the caller's team, newest first (R11, "Memory refused: no proof").
+    Facts only: run, case, failing test names. Nothing was stored, so there is no content."""
+    return store().refusals(principal, min(max(limit, 1), 20))
+
+
 @router.get("/compare-unscoped", response_model=MemorySearchResult)
 def compare_unscoped(q: str, principal: AdminPrincipal) -> MemorySearchResult:
     """Admin only, for the Fence view: what the search WOULD return without the team filter.
@@ -54,6 +61,16 @@ def get_memory(memory_id: str, principal: CurrentPrincipal) -> MemoryCard:
     if card is None:  # same answer for "missing" and "not your team", so ids can't be probed
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No memory with that id for your team.")
     return card
+
+
+@router.get("/{memory_id}/stale")
+def memory_stale(memory_id: str, principal: CurrentPrincipal) -> dict:
+    """R12: has the code changed since this memory was proven? {stale, changedFiles}. Not audited,
+    so the card can poll it."""
+    result = store().staleness(principal, memory_id)
+    if result is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No memory with that id for your team.")
+    return result
 
 
 @router.get("/{memory_id}/audit")
