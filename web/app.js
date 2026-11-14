@@ -800,7 +800,8 @@
     "3": (force) => openCase("C", force), // Refuse
     "4": (force) => openCase("D", force), // Fence: switches to the Platform engineer
     // Forget: memory.js only redraws a slot it owns, so clear a Fence/refusal view first, then redraw the list.
-    "5": () => { $("memory-slot").replaceChildren(); applyIdentity("key-payments-admin"); window.traceback.refreshMemories?.(); $("memory-panel").scrollIntoView({ behavior: smooth }); scrollToForget(Date.now()); },
+    // Forget leaves the run: a finished run's data-live="done" would make memory.js keep its hands off the slot (#73).
+    "5": () => { if ($("run-panel").dataset.live !== "live") setLive(null); $("memory-slot").replaceChildren(); applyIdentity("key-payments-admin"); window.traceback.refreshMemories?.(); $("memory-panel").scrollIntoView({ behavior: smooth }); scrollToForget(Date.now()); },
     "6": (force) => openCase("P", force), // Earn's poisoned log: Atlas refuses an unproven memory
     "0": () => replaySample(),
     c: () => ($("compare").hidden ? showCompare("B") : hideCompare()), // compare with vs without memory
