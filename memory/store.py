@@ -52,7 +52,15 @@ from .staleness import changed_files, proven_against
 
 NUM_CANDIDATES = 100
 VECTOR_LIMIT = 5
-STRONG_MATCH = 0.88  # display only: "match: strong/weak", never a raw score on screen (cutoff is 0.83)
+# "match: strong/weak" (shown instead of a raw score) comes from the VECTOR score only (#55): an exact
+# signature hit (same error code + operation) still surfaces a look-alike so its conditions can refuse it,
+# but it no longer implies strong similarity. Measured with P1's code-derived recall text (add769c), Atlas
+# scores = (1 + cosine) / 2: true repeats A/B/B2/B3/P 0.952; look-alikes D 0.939, C 0.927; best distractor 0.778.
+STRONG_MATCH = 0.945
+
+
+def match_label(vector_score: float | None) -> str:
+    return "strong" if (vector_score or 0.0) >= STRONG_MATCH else "weak"
 HIDDEN = {"embedding": 0}  # hmacSecret is read for audit hashes, then stripped before returning
 
 
@@ -307,7 +315,9 @@ class AtlasMemoryStore:
         scores: dict[str, float] = {}
         sources: dict[str, set[str]] = {}
 
+        vector_scores: dict[str, float] = {}  # every vector hit, also those below the cutoff (for labels)
         for h in self._vector(embed_one(text, "query"), scope):
+            vector_scores[h["_id"]] = h["score"]
             if h["score"] >= MIN_SCORE:
                 scores[h["_id"]] = h["score"]
                 sources.setdefault(h["_id"], set()).add("vector")
@@ -319,7 +329,7 @@ class AtlasMemoryStore:
             if signature.get("operation"):
                 sig["signature.operation"] = signature["operation"]
             for doc in self.memories.find({**scope, **sig}, {"_id": 1}).limit(VECTOR_LIMIT):
-                scores.setdefault(doc["_id"], 0.0)
+                scores.setdefault(doc["_id"], vector_scores.get(doc["_id"], 0.0))  # its real similarity
                 sources.setdefault(doc["_id"], set()).add("signature")
 
         if not scores:
@@ -342,7 +352,7 @@ class AtlasMemoryStore:
             doc["_rank"] = rank
             doc["_score"] = scores[doc["_id"]]
             doc["_source"] = "vector" if "vector" in src else "signature"
-            doc["_match"] = "strong" if scores[doc["_id"]] >= STRONG_MATCH or "signature" in src else "weak"
+            doc["_match"] = match_label(scores[doc["_id"]])  # similarity only; a signature hit is not "strong"
         audit.log_many(self.db, events)
         return ranked
 
@@ -382,7 +392,7 @@ class AtlasMemoryStore:
             doc = docs.get(h["_id"])
             if doc is None:  # deleted since the index saw it
                 continue
-            doc["_match"] = "strong" if h["score"] >= STRONG_MATCH else "weak"
+            doc["_match"] = match_label(h["score"])
             card = self.to_card(doc)
             if principal.team_id not in doc["readableBy"]:
                 owner = doc["ownerTeamId"].removeprefix("team-").capitalize()
