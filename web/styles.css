@@ -412,3 +412,7 @@ pre.patch .tag svg.lucide { width: 0.9rem; height: 0.9rem; }
 
 /* Compare: a failing test's name stays on one line (no mid-word break). */
 #compare .failing code { white-space: nowrap; font-size: 0.8em; }
+
+/* Link from a verified run to the live practice app (scripts/live_app.py). */
+#live-link { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; font-size: var(--fine); font-weight: 600; }
+#live-link svg { width: 1em; height: 1em; }
