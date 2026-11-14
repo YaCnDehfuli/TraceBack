@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payments · webhook receiver</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M9 16h14M17 10l6 6-6 6' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <!-- Vendored copies only (no CDN at the venue). -->
+  <link rel="stylesheet" href="vendor/pico.min.css">
+  <link rel="stylesheet" href="vendor/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="live.css">
+</head>
+<body>
+  <!-- The practice company's own ops page: the real bug happening, then the agent's verified fix. -->
+  <header class="bar">
+    <div class="product">
+      <span class="mark"><i data-lucide="webhook"></i></span>
+      <div class="product-name"><strong>Payments</strong><span>webhook receiver</span></div>
+    </div>
+    <div class="report">
+      <span class="report-label" id="case-label">Incident</span>
+      <span class="report-text" id="case-report">Loading…</span>
+    </div>
+    <button type="button" id="replay" class="replay"><span class="play">▶</span> Replay the provider's deliveries</button>
+  </header>
+
+  <main class="cols">
+    <section class="col" id="col-before" aria-label="Before">
+      <header class="col-head">
+        <span class="col-kicker before">Before</span>
+        <div class="col-title"><h2>the code in production</h2><span class="col-sub" id="before-sub">app/webhooks.py · as deployed</span></div>
+      </header>
+      <div class="col-body" id="before-body"></div>
+    </section>
+
+    <section class="col" id="col-after" aria-label="After">
+      <header class="col-head">
+        <span class="col-kicker after">After</span>
+        <div class="col-title">
+          <div class="title-row"><h2>Traceback's verified fix</h2><span class="tb-badge"><i data-lucide="shield-check"></i> fixed by Traceback</span></div>
+          <span class="col-sub" id="after-sub">no run selected</span>
+        </div>
+      </header>
+      <div class="col-body" id="after-body"></div>
+    </section>
+  </main>
+
+  <script src="vendor/prism.js" data-manual></script>
+  <script src="vendor/prism-python.min.js"></script>
+  <script src="vendor/lucide.min.js"></script>
+  <script src="live.js"></script>
+</body>
+</html>
