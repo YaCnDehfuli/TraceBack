@@ -1,4 +1,4 @@
-"""The investigation loop (P1-2). Every step is a RunEvent (contracts.models.*Payload).
+"""The investigation loop. Every step is a RunEvent (contracts.models.*Payload).
 
 1. run_started
 2. observation          the case parsed in code (agent.observe): E11000 fields, deliveries, frames
@@ -330,7 +330,7 @@ def _safe_record_use(principal, memory, cand, run_id, decision, sink, reason: st
     try:
         outcome = memory.record_use(principal, cand.memory_id, cand.version, run_id, decision)
     except NotImplementedError:
-        sink.emit("error", ErrorPayload(message="Memory use not recorded yet (record_use is P2-6)."))
+        sink.emit("error", ErrorPayload(message="Memory use not recorded: this store does not support record_use."))
         return
     except Exception as e:  # noqa: BLE001
         sink.emit("error", ErrorPayload(message=f"record_use failed: {type(e).__name__}: {str(e)[:160]}"))
@@ -356,7 +356,7 @@ def _promote(principal, memory, obs, last_fix, final, revision, sink) -> None:
     try:
         memory_id = memory.promote(principal, draft, final)
     except NotImplementedError:
-        sink.emit("error", ErrorPayload(message="Memory not saved yet (promote is P2-2)."))
+        sink.emit("error", ErrorPayload(message="Memory not saved: this memory store does not support promote."))
         return
     except Exception as e:  # noqa: BLE001 - a refused write is a governance event, not a crash
         refused = type(e).__name__ == "MemoryRefused" or "no proof" in str(e).lower()
@@ -496,7 +496,7 @@ def _tool_result(call_id: str, content: str, is_error: bool = False) -> dict[str
 
 
 def _load_placebo(obs: Observations) -> MemoryCandidate | None:
-    """An unrelated memory of similar length, injected through the same _memory_block (plan R10)."""
+    """An unrelated memory of similar length, injected through the same _memory_block."""
     if not PLACEBO_FILE.exists():
         return None
     items = json.loads(PLACEBO_FILE.read_text(encoding="utf-8"))

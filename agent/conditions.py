@@ -1,4 +1,4 @@
-"""E11000 parsing and memory condition checks, in plain code (plan 4.2). No LLM involved.
+"""E11000 parsing and memory condition checks, in plain code. No LLM involved.
 
 The runner drops its database after each run, so we never inspect live indexes. Instead we parse the
 duplicate-key message, which names the index and the duplicate key, and compare the incident's two

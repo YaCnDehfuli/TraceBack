@@ -1,4 +1,4 @@
-// Owner: P2. The memory card, Fence split view and admin drawer (plan 7.3, P2-4 / P2-5 / P2-7).
+// The memory card, Fence split view and admin drawer.
 // Implements window.traceback.renderMemoryCard(memory, context): memory is a MemoryCard (contracts/models.py,
 // camelCase JSON), context is optional:
 //   { preconditions: [PreconditionResult] }   condition results for the current incident, during a run
@@ -10,7 +10,7 @@
 
   const TEAMS = {
     // Same colours as web/styles.css (.team-payments / .team-platform --team). Payments is cyan, not
-    // teal, so it doesn't read as the green "tests passed" on a projector (issue #15).
+    // teal, so it doesn't read as the green "tests passed" on a projector.
     "team-payments": { name: "Payments", color: "#0e7490" },
     "team-platform": { name: "Platform", color: "#6d28d9" },
   };
@@ -56,7 +56,7 @@
 
   // ---------------------------------------------------------------- the card
   function forgottenCard(memory) {
-    // Content is gone, so the receipt lines are blacked out (issue #17); P3's CSS adds the VOID stamp.
+    // Content is gone, so the receipt lines are blacked out; styles.css adds the VOID stamp.
     const f = memory.forgotten;
     const bars = [78, 52, 66, 40].map((w) => {
       const bar = el("span", "tb-redacted");
@@ -158,9 +158,9 @@
     return card;
   }
 
-  // ---------------------------------------------------------------- admin drawer (P2-6)
+  // ---------------------------------------------------------------- admin drawer
   // Forget and Expire now, only under an admin key of the owner team. Forget is always a person
-  // clicking a button with a typed reason (plan 6.4: never by voice, never by the agent).
+  // clicking a button with a typed reason (never by voice, never by the agent).
   const whoCache = {};
   function whoami() {
     const key = window.traceback.currentKey ? window.traceback.currentKey() : "";
@@ -181,7 +181,7 @@
     reason.setAttribute("aria-label", "Reason");
     const expire = el("button", "tb-btn", "Expire now");
     const forget = el("button", "tb-btn tb-danger", "Forget");
-    // Correction (P2-7): add an exclusion -> a new version supersedes this one.
+    // Correction: add an exclusion -> a new version supersedes this one.
     const exclude = el("input", "tb-reason");
     exclude.type = "text";
     exclude.placeholder = "Does not apply when… (correction)";
@@ -236,7 +236,7 @@
       const gone = forgottenCard(tomb);
       card.replaceWith(gone);
       probeRecall(gone, memory.memoryId);
-      // For the run view (P3): e.g. rerun or show the compare view after Forget.
+      // For the run view: e.g. rerun or show the compare view after Forget.
       document.dispatchEvent(new CustomEvent("traceback:memory-forgotten", { detail: { memoryId: memory.memoryId, card: tomb } }));
     }));
 
@@ -286,7 +286,7 @@
     refreshAdminDrawers();
   }
 
-  // ---------------------------------------------------------------- staleness (R12)
+  // ---------------------------------------------------------------- staleness
   // Every 5 s, ask whether the code each visible memory was proven on has changed, and flip its
   // "Stale" chip live (edit one line of webhooks.py and the card flips). Unaudited endpoint.
   function staleChip() {
@@ -310,13 +310,13 @@
 
   // ---------------------------------------------------------------- the panel
   // Idle state only: when no run is on screen, #memory-slot lists the caller's team's memories.
-  // During a run, app.js (P3) owns the slot and calls renderMemoryCard for the run's memory;
+  // During a run, app.js owns the slot and calls renderMemoryCard for the run's memory;
   // we never overwrite that (our list is marked with .tb-list).
   async function refreshMemories() {
     const slot = document.getElementById("memory-slot");
     if (!slot) return;
     // A run is on screen (app.js sets #run-panel[data-live] to live / replay / done): the slot belongs
-    // to the run, even when it is empty ("Nothing your team may see"). Never fill it then (#76).
+    // to the run, even when it is empty ("Nothing your team may see"). Never fill it then.
     const runOnScreen = () => !!document.getElementById("run-panel")?.dataset.live;
     const ours = () => !runOnScreen() &&
       (!slot.firstElementChild || slot.firstElementChild.classList.contains("tb-list"));
@@ -333,7 +333,7 @@
     if (ours()) slot.replaceChildren(list); // a run may have claimed the slot while we waited
   }
 
-  // ---------------------------------------------------------------- the Fence view (P2-5)
+  // ---------------------------------------------------------------- the Fence view
   // The same search run with each team's demo key, side by side, plus what Platform's search WOULD
   // return without the team filter (struck through; other teams' memories arrive redacted from the API),
   // and the exact $vectorSearch pre-filter printed underneath.
@@ -352,7 +352,7 @@
     head.style.color = t.color;
     const body = result.count
       ? el("ul", "tb-conds", ...result.memories.map((m) =>
-        // No strong/weak here (#72): Fence is about who may SEE a memory, and its generic query scores
+        // No strong/weak here: Fence is about who may SEE a memory, and its generic query scores
         // differently from the incident's own recall, so a label would contradict the run view's match.
         el("li", "tb-cond", el("span", "tb-icon", "✓"), m.title)))
       : el("p", "tb-muted", "Nothing your team may see.");
@@ -393,7 +393,7 @@
     }
   }
 
-  // ---------------------------------------------------------------- refusal receipt (R11)
+  // ---------------------------------------------------------------- refusal receipt
   // "Memory refused: no proof." The fix failed verification, so Atlas's validator refused the write.
   // Nothing was stored: the receipt shows only facts from the audit log (run, case, failing tests).
   function renderRefusal(ev) {
@@ -408,7 +408,7 @@
         el("ul", "tb-conds", ...failed.map((t) => el("li", "tb-cond tb-bad", el("span", "tb-icon", "✗"), t)))) : null,
       el("p", "tb-line", "Atlas's schema validator requires failed-before and passed-after. Nothing was stored."),
       el("p", "tb-muted", `${d.caseId ? `Case ${d.caseId} · ` : ""}run ${ev.runId || "?"} · ${new Date(ev.at).toLocaleTimeString()}`));
-    card.appendChild(el("div", "stamp refused", "Refused")); // P3's stamp style (styles.css)
+    card.appendChild(el("div", "stamp refused", "Refused")); // stamp style from styles.css
     return card;
   }
 
@@ -428,7 +428,7 @@
     }
   }
 
-  // ---------------------------------------------------------------- styles (kept here so P3's page stays untouched)
+  // ---------------------------------------------------------------- styles (kept here so styles.css stays untouched)
   function injectStyles() {
     const css = `
       .tb-card { background:#fff; border:1px solid #dde1e6; border-top:5px solid #5b6670; border-radius:10px;

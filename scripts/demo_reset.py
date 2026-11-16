@@ -1,13 +1,13 @@
-"""Reset the demo right before each judging session (owner: P3, P3-6; plan section 8).
+"""Reset the demo database to a known state before each demo.
 
     uv run python scripts/demo_reset.py [--db traceback_demo] [--skip-check]
 
 1. Drop leftover practice-app databases (fixture_*) from crashed or interrupted runs.
-2. Reseed Atlas through P2's scripts/seed_demo.py: team policies, the Earn memory (24 h),
+2. Reseed Atlas through scripts/seed_demo.py: team policies, the Earn memory (24 h),
    the 90-second canary memory, the labelled distractors, and one real refused write (--poison:
-   case P's poisoned fix fails the trusted tests, so Atlas refuses it; the R11 receipt shows it).
+   case P's poisoned fix fails the trusted tests, so Atlas refuses it; the refusal receipt shows it).
 3. Check the practice app still reproduces the bug (runner reproduce A), so a broken fixture
-   is caught before the judges see it.
+   is caught before anyone sees it.
 
 Exit code 0 only when every step that is implemented succeeded.
 """

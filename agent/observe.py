@@ -1,6 +1,6 @@
 """Turn a case (request, deliveries, logs) into Observations, in plain code. No LLM.
 
-Used by the walking skeleton (scripts/skeleton.py) and by the agent loop (P1-2), so recall and the
+Used by the walking skeleton (scripts/skeleton.py) and by the agent loop, so recall and the
 condition checks always see the same facts.
 """
 

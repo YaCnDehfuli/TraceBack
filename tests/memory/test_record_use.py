@@ -1,4 +1,4 @@
-"""record_use: the store turns the agent's decision into the governance outcome (P2-6, guide 8.4).
+"""record_use: the store turns the agent's decision into the governance outcome.
 Run: uv run pytest -m atlas tests/memory"""
 
 from __future__ import annotations

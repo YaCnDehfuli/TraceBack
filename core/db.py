@@ -14,8 +14,8 @@ class Collections:
     INCIDENTS = "incidents"
     RUNS = "runs"
     RUN_EVENTS = "run_events"
-    MEMORIES = "memories"  # written ONLY by the memory service (P2)
-    MEMORY_AUDIT = "memory_audit"  # append-only, written ONLY by the memory service (P2)
+    MEMORIES = "memories"  # written ONLY by the memory service
+    MEMORY_AUDIT = "memory_audit"  # append-only, written ONLY by the memory service
     POLICIES = "policies"
 
 
@@ -28,7 +28,7 @@ def get_client() -> MongoClient:
         )
     if not uri:
         raise RuntimeError(
-            "MONGODB_URI is not set. Copy .env.example to .env and fill it in (team guide, section 6.3)."
+            "MONGODB_URI is not set. Copy .env.example to .env and fill it in."
         )
     # tz_aware=True: datetimes come back as UTC-aware, which expiry comparisons rely on.
     return MongoClient(uri, appname="traceback", tz_aware=True, serverSelectionTimeoutMS=10_000)

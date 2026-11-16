@@ -1,4 +1,4 @@
-# cases (owner: P3)
+# cases
 
 One folder per case: `manifest.json` (what the agent may see; contracts.models.CaseManifest) and
 `labels.json` (hidden answers, read only by the experiment scorer). Copy `_template/` to start.

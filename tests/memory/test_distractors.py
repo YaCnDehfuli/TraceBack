@@ -1,4 +1,4 @@
-"""R8: vector search means something. With ~20 labelled distractors seeded across both teams, every
+"""Vector search means something. With ~20 labelled distractors seeded across both teams, every
 case's real recall query finds the real memory above the cutoff, no distractor clears it, and the
 Fence still reads "Platform sees 0". Run: uv run pytest -m atlas tests/memory"""
 

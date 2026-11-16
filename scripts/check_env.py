@@ -20,7 +20,7 @@ from core.config import Settings, get_settings  # noqa: E402
 def check_atlas(s: Settings) -> tuple[bool, str]:
     uri = s.mongodb_uri.get_secret_value()
     if not uri or "<password>" in uri:
-        return False, "MONGODB_URI is not set. Ask P2 for the connection string (sent privately)."
+        return False, "MONGODB_URI is not set. Add your Atlas connection string to .env."
     try:
         from pymongo import MongoClient
 
@@ -33,7 +33,7 @@ def check_atlas(s: Settings) -> tuple[bool, str]:
         if "ServerSelectionTimeout" in name:
             return False, (
                 "timed out: add your IP in Atlas > Database & Network Access > IP Access List "
-                "(the venue Wi-Fi needs one entry)"
+                "(add this network's address)"
             )
         if "OperationFailure" in name or "Authentication" in str(e):
             return False, "authentication failed: check the user and password (URL-encode @ : / ?)"
@@ -89,7 +89,7 @@ def check_llm(s: Settings) -> tuple[bool, str]:
 
 def check_elevenlabs(s: Settings) -> tuple[bool, str]:
     if not s.elevenlabs_agent_id:
-        return False, "ELEVENLABS_AGENT_ID is not set (only needed for the voice agent, rung R9)."
+        return False, "ELEVENLABS_AGENT_ID is not set (only needed for the unbuilt voice agent)."
     return True, "agent id set"
 
 

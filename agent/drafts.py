@@ -1,4 +1,4 @@
-"""Build the MemoryDraft for a verified fix. Conditions are filled automatically (plan 4.2)."""
+"""Build the MemoryDraft for a verified fix. Conditions are filled automatically."""
 
 from __future__ import annotations
 

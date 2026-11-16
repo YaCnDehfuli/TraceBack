@@ -1,10 +1,10 @@
-"""Stand-ins for the real MemoryStore and Runner, so everyone can build before the real code exists.
+"""Stand-ins for the real MemoryStore and Runner, for tests that need neither Atlas nor a test database.
 
     from contracts.fakes import FakeMemoryStore, FakeRunner
 
-At the R1 checkpoint we swap these for memory.store.AtlasMemoryStore and runner.sandbox.LocalRunner.
+Production uses memory.store.AtlasMemoryStore and runner.sandbox.LocalRunner instead.
 They follow the same rules as the real ones (team scope, verify-gated promotion), only in memory
-and with canned answers. FakeRunner also models the Payments convention (plan 4.1): a fix without
+and with canned answers. FakeRunner also models the Payments convention: a fix without
 `ledger.mark_replayed(...)` fails test_replay_recorded_for_reconciliation.
 """
 

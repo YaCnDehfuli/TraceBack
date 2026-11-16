@@ -1,4 +1,4 @@
-"""Memory REST endpoints (P2-4 to P2-7): cards, search, Fence comparison, forget, expire, correct, history.
+"""Memory REST endpoints: cards, search, Fence comparison, forget, expire, correct, history.
 
 Mounted by api/main.py. Every route is scoped to the caller's team; admin routes need memory_admin.
 Route order matters: /memories/search and /memories/compare-unscoped must stay above /memories/{memory_id}.
@@ -40,7 +40,7 @@ def search_memories(q: str, principal: CurrentPrincipal) -> MemorySearchResult:
 
 @router.get("/refusals")
 def recent_refusals(principal: CurrentPrincipal, limit: int = 5) -> list[dict]:
-    """Writes Atlas refused for the caller's team, newest first (R11, "Memory refused: no proof").
+    """Writes Atlas refused for the caller's team, newest first ("Memory refused: no proof").
     Facts only: run, case, failing test names. Nothing was stored, so there is no content."""
     return store().refusals(principal, min(max(limit, 1), 20))
 
@@ -65,7 +65,7 @@ def get_memory(memory_id: str, principal: CurrentPrincipal) -> MemoryCard:
 
 @router.get("/{memory_id}/stale")
 def memory_stale(memory_id: str, principal: CurrentPrincipal) -> dict:
-    """R12: has the code changed since this memory was proven? {stale, changedFiles}. Not audited,
+    """Staleness: has the code changed since this memory was proven? {stale, changedFiles}. Not audited,
     so the card can poll it."""
     result = store().staleness(principal, memory_id)
     if result is None:

@@ -1,4 +1,4 @@
-"""Incidents, runs and run events: storage and background execution (P1-4).
+"""Incidents, runs and run events: storage and background execution.
 
 Rules:
 - The run document is saved BEFORE any LLM or tool call starts.

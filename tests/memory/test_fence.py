@@ -1,4 +1,4 @@
-"""Fence endpoints (P2-5): scoped search and the admin-only unscoped comparison.
+"""Fence endpoints: scoped search and the admin-only unscoped comparison.
 Run: uv run pytest -m atlas tests/memory"""
 
 from __future__ import annotations

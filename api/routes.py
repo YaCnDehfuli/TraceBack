@@ -1,4 +1,4 @@
-"""Incident and run endpoints (P1-4).
+"""Incident and run endpoints.
 
     POST /incidents                     {repositoryId, caseId}            -> {incidentId}
     POST /incidents/{id}/runs?memory=   (Idempotency-Key header optional)  -> {runId, status}  202

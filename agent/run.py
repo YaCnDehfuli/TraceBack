@@ -1,4 +1,4 @@
-"""Run one investigation from the command line (P1-2):
+"""Run one investigation from the command line:
 
     uv run python -m agent.run --case B --team payments [--memory real|off|placebo]
                                [--runner auto|local|fake] [--store auto|atlas|fake] [--no-seed] [--json]

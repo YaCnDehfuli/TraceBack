@@ -1,4 +1,4 @@
-"""R12: a memory goes stale when the code it was proven against changes.
+"""A memory goes stale when the code it was proven against changes.
 Offline tests (fingerprints) run in CI; the end-to-end one needs Atlas."""
 
 from __future__ import annotations

@@ -1,5 +1,5 @@
-// Owner: P3. The run view, identity pill and keyboard shortcuts (plan 7.3).
-// Contract hooks (plan section 6): memory.js (P2) and voice.js (P1) talk to this file ONLY through
+// The run view, identity pill and keyboard shortcuts.
+// Contract hooks: memory.js and voice.js talk to this file ONLY through
 //   window.traceback.renderMemoryCard(memory, context)   <- implemented by memory.js
 //   window.traceback.currentKey()                         -> the API key the page acts as
 //   window.traceback.showRun(runId)                       -> make the screen follow a run
@@ -319,7 +319,7 @@
     try {
       card = await api(`/memories/${encodeURIComponent(ref.memoryId)}`);
     } catch (_) {
-      card = null; // P2's endpoint not ready, or not readable: fall back to the reference
+      card = null; // memory endpoint unavailable, or not readable: fall back to the reference
     }
     if (state.memoryRef !== ref) return; // a newer memory took the receipt while we waited
     const context = { currentKey, preconditions: state.preconditions, decision: state.decision };
@@ -564,7 +564,7 @@
         const text = p.outcome === "renewed" ? "Receipt renewed: proven again today." : p.message || `Memory ${p.outcome}`;
         addStep(refused ? "ban" : "receipt-text", text, { tone: refused ? "bad" : "memory" });
         if (refused) stamp("refused");
-        // P2 (R11): Atlas refused the write -> show the refusal receipt (failing test, "Nothing was stored").
+        // Atlas refused the write -> show the refusal receipt (failing test, "Nothing was stored").
         if (p.outcome === "refused" && window.traceback.showRefusal) window.traceback.showRefusal(event.runId);
         if (p.memory) showMemory(p.memory);
         break;
@@ -690,7 +690,7 @@
     setStatus("Replay finished");
   }
 
-  // ------------------------------------------------------------------ compare overlay (P3-8)
+  // ------------------------------------------------------------------ compare overlay
   // Two finished runs of the same case side by side: the latest one that used a memory and the
   // latest one that didn't (the rerun after Forget). Facts only, taken from events.
 
@@ -814,16 +814,16 @@
     "3": (force) => openCase("C", force), // Refuse
     "4": (force) => openCase("D", force), // Fence: switches to the Platform engineer
     // Forget: memory.js only redraws a slot it owns, so clear a Fence/refusal view first, then redraw the list.
-    // Forget leaves the run: a finished run's data-live="done" would make memory.js keep its hands off the slot (#73).
+    // Forget leaves the run: a finished run's data-live="done" would make memory.js keep its hands off the slot.
     "5": () => { if ($("run-panel").dataset.live !== "live") setLive(null); $("memory-slot").replaceChildren(); applyIdentity("key-payments-admin"); window.traceback.refreshMemories?.(); $("memory-panel").scrollIntoView({ behavior: smooth }); scrollToForget(Date.now()); },
     "6": (force) => openCase("P", force), // Earn's poisoned log: Atlas refuses an unproven memory
     "0": () => replaySample(),
     c: () => ($("compare").hidden ? showCompare("B") : hideCompare()), // compare with vs without memory
-    // P2 views (web/memory.js), into the memory panel:
-    // F and R swap the receipt column to a P2 view: clear the run's verdict so a green "Verified" never sits
+    // Memory views (web/memory.js), into the memory panel:
+    // F and R swap the receipt column to a memory view: clear the run's verdict so a green "Verified" never sits
     // under a red refusal, and the Fence card has the column to itself (fits at 1280x720).
     f: () => { clearVerdict(); window.traceback.showFence && window.traceback.showFence(); }, // "Payments sees 1 / Platform sees 0" + filter
-    r: () => { clearVerdict(); window.traceback.showRefusal && window.traceback.showRefusal(); }, // latest "Memory refused: no proof." (R11)
+    r: () => { clearVerdict(); window.traceback.showRefusal && window.traceback.showRefusal(); }, // latest "Memory refused: no proof."
   };
 
   // Key 5: memory.js adds the admin drawer once /whoami answers; bring its reason box and Forget button into view
@@ -879,7 +879,7 @@
     showRun: (runId, caseId) => followRun(runId, caseId),
     startCase,
     showCompare,
-    renderMemoryCard: (memory, context) => fallbackCard(memory), // replaced by web/memory.js (P2-4)
+    renderMemoryCard: (memory, context) => fallbackCard(memory), // replaced by web/memory.js
   };
 
   document.addEventListener("DOMContentLoaded", async () => {

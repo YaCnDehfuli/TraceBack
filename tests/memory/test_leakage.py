@@ -1,4 +1,4 @@
-"""Fence and proof, against real Atlas (P2-3). Run: uv run pytest -m atlas tests/memory
+"""Fence and proof, against real Atlas. Run: uv run pytest -m atlas tests/memory
 
 Uses MONGODB_DB from .env (your own database, e.g. traceback_p2) after scripts/atlas_setup.py.
 """

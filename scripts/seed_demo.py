@@ -1,19 +1,19 @@
-"""Seed the demo database (owner: P2; plan section 8). P3's scripts/demo_reset.py calls it with --reset.
+"""Seed the demo database. scripts/demo_reset.py calls it with --reset.
 
     uv run python scripts/seed_demo.py --db traceback_demo --reset    # what demo_reset runs
     uv run python scripts/seed_demo.py --db traceback_demo            # top up, keep what exists
     uv run python scripts/seed_demo.py --db traceback_p2 --sample     # + a hand-made webhook memory (testing)
-    uv run python scripts/seed_demo.py --db traceback_demo --poison   # + a real "Memory refused: no proof" (R11)
+    uv run python scripts/seed_demo.py --db traceback_demo --poison   # + a real "Memory refused: no proof"
 
 Creates:
 - team policies (24 h life, 48 h max lifetime)
-- the **Earn memory**: case A's reference fix, verified by P3's real runner (LocalRunner) and promoted
+- the **Earn memory**: case A's reference fix, verified by the real runner (LocalRunner) and promoted
   under Payments, exactly the path a real run takes. With --reset it is recreated, so its 24 h
-  restart and a memory forgotten in the previous judging round comes back.
+  restart and a memory forgotten in the previous demo comes back.
 - with --reset, memories that earlier agent runs promoted in the two demo repositories are forgotten
-  first (tombstones kept), so rehearsals can't leave stale duplicates behind (#67)
+  first (tombstones kept), so rehearsals can't leave stale duplicates behind
 - the 90-second **canary** (seeded), recreated every time so its countdown restarts
-- about 20 labelled **distractors** across both teams (R8): other bug families, so vector search and
+- about 20 labelled **distractors** across both teams: other bug families, so vector search and
   its score cutoff (memory/config.py MIN_SCORE) have something real to reject
 
 Honesty rule: a memory is labelled `seeded: true` unless the real runner proved it. If the fixture
@@ -90,7 +90,7 @@ SAMPLE_WEBHOOK = MemoryDraft(
 )
 
 
-# ------------------------------------------------------------------ distractors (R8, plan 4.4)
+# ------------------------------------------------------------------ distractors
 # Realistic incidents from OTHER bug families, across both teams, so vector search has something to
 # rank and the score cutoff has something to reject. All labelled seeded. A few are deliberate near
 # misses (a webhook signature failure, a webhook relay timeout, a missing index) to test the cutoff.
@@ -223,21 +223,21 @@ DEMO_REPOSITORIES = ["payments-webhooks", "platform-webhooks"]
 
 
 def reset_memories(store: AtlasMemoryStore) -> dict:
-    """--reset (#67): start the demo memory from a known state.
+    """--reset: start the demo memory from a known state.
     1. Seeded memories (canary, distractors, a fake-runner Earn) are deleted; they're recreated below.
     2. Every NON-seeded memory in the two demo repositories (the previous Earn, and anything earlier agent
        runs promoted: duplicate Earns, case C/D memories) is forgotten, all versions, with tombstones by
        policy:demo-reset, so no stale duplicate stays recallable. Other repositories are untouched.
     Safe to run twice."""
     seeded = store.memories.delete_many({"tenantId": TENANT, "seeded": True}).deleted_count
-    forgot = store.forget_for_reset(TENANT, DEMO_REPOSITORIES, "demo reset: start from a known state (#67)")
+    forgot = store.forget_for_reset(TENANT, DEMO_REPOSITORIES, "demo reset: start from a known state")
     print(f"reset: deleted {seeded} seeded memories; forgot {forgot['lineages']} earlier memories in "
           f"{', '.join(DEMO_REPOSITORIES)} ({forgot['versions']} version(s), tombstones kept)")
     return {"seeded": seeded, **forgot}
 
 
 def poison(store: AtlasMemoryStore) -> bool:
-    """R11, deterministic: run case P's POISONED fix (it follows the log's injected "drop the unique
+    """Deterministic refusal: run case P's POISONED fix (it follows the log's injected "drop the unique
     index" instruction) through the real runner, then try to save it as a memory the way a run would.
     The runner fails test_unique_index_still_present, so Atlas's validator refuses the write.
     Returns True only if the database really refused it."""
@@ -276,7 +276,7 @@ def main() -> int:
     ap.add_argument("--no-distractors", action="store_true", help="skip the ~20 labelled distractor memories")
     ap.add_argument("--sample", action="store_true", help="also seed a hand-made webhook memory (testing only)")
     ap.add_argument("--poison", action="store_true",
-                    help="R11: real runner on case P's poisoned fix, then a write Atlas refuses (needs Docker)")
+                    help="real runner on case P's poisoned fix, then a write Atlas refuses (needs Docker)")
     a = ap.parse_args()
     db = get_db(a.db)
 

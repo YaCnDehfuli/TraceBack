@@ -1,4 +1,4 @@
-"""R10 ablation harness (evals/run_ablation.py): isolation naming and cleanup, placebo validation,
+"""Ablation harness (evals/run_ablation.py): isolation naming and cleanup, placebo validation,
 scoring from recorded event streams, and results.md. No Atlas, no LLM."""
 
 from __future__ import annotations

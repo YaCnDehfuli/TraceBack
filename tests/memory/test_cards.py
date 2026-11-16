@@ -1,4 +1,4 @@
-"""Memory card routes are team-scoped (P2-4). Run: uv run pytest -m atlas tests/memory"""
+"""Memory card routes are team-scoped. Run: uv run pytest -m atlas tests/memory"""
 
 from __future__ import annotations
 

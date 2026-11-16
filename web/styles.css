@@ -23,7 +23,7 @@
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --gutter: clamp(16px, 2.5vw, 48px);
-  --fine: max(0.9rem, 18px); /* the smallest text a judge reads: never under 18px, however small fit makes the root (body text uses max(…rem, 18px) too) */
+  --fine: max(0.9rem, 18px); /* the smallest text a viewer reads: never under 18px, however small fit makes the root (body text uses max(…rem, 18px) too) */
 
   /* Start: 20px at 1280x720, 30px at 1920x1080, 40px at 2560x1440. app.js (fit) refines it to fill the window. */
   --pico-font-size: clamp(16px, min(1.5625vw, 2.777vh), 48px);

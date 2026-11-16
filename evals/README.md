@@ -1,7 +1,10 @@
-# evals (owner: P1, P1-9)
+# evals
 
-The placebo experiment (plan R10): cases B, B2, B3 × memory `off` / `placebo` / `real` = 9 runs.
+The memory experiment: cases B, B2 and B3 × memory `off` / `placebo` / `real`, each run in its own
+throwaway Atlas database. Design and results: [docs/EVALUATION.md](../docs/EVALUATION.md).
 
-- `placebo_memories.json`: unrelated memories of the same length, injected through the same code path.
-- `run_ablation.py`: runs everything, scores against `cases/*/labels.json`, writes `results/results.md`.
-- Headline metric: **verified on the first attempt**. Report raw counts ("3 of 3"), never only percentages.
+- `run_ablation.py`: plans and runs the experiment through the API, scores each run against
+  `cases/*/labels.json`, and writes `results/results.md` and `results/results.json`.
+- `placebo_memories.json`: unrelated memories, length-matched to the real one on what reaches the prompt.
+- `calibrate.py`: repeated no-memory runs of one case, to check the agent can't find the team rule unaided.
+- Headline metric: **verified on the first attempt**, reported as raw counts.

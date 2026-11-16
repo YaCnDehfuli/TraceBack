@@ -1,4 +1,4 @@
-"""Calibration (P1-3, plan 4.1): does the agent find the team convention on its own?
+"""Calibration: does the agent find the team convention on its own?
 
     uv run python evals/calibrate.py --case B --memory off --runs 3
     uv run python evals/calibrate.py --case B --memory off --runs 3 --model claude-haiku-5-5

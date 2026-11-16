@@ -1,4 +1,4 @@
-"""API key -> Principal. Shared by api/ (P1) and memory/router.py (P2).
+"""API key -> Principal. Shared by api/ and memory/router.py.
 
 Identity comes ONLY from the X-API-Key header, mapped by DEMO_PRINCIPALS in .env. Nothing in a
 request body, a log, a memory or something spoken to the voice agent can change who is calling.

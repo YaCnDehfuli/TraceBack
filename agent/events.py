@@ -1,6 +1,6 @@
 """Run events: numbered from 1 with no gaps, each payload a contracts.models.*Payload.
 
-EventSink keeps them in memory and calls `on_event` for each one (the CLI prints it; the API, P1-4,
+EventSink keeps them in memory and calls `on_event` for each one (the CLI prints it; the API
 writes it to the run_events collection).
 """
 

@@ -1,4 +1,4 @@
-"""Database-side rules: the memories validator and every index (guide 8.7).
+"""Database-side rules: the memories validator and every index.
 
 The validator is what makes "Memory refused: no proof" real: Atlas rejects any
 memory whose verification didn't fail before and pass after.

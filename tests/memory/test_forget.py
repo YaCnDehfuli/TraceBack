@@ -1,4 +1,4 @@
-"""Forget and expire-now (P2-6, R5). Run: uv run pytest -m atlas tests/memory"""
+"""Forget and expire-now. Run: uv run pytest -m atlas tests/memory"""
 
 from __future__ import annotations
 

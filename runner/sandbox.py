@@ -1,4 +1,4 @@
-"""LocalRunner: the real Runner (P3-3). Implements contracts.interfaces.Runner.
+"""LocalRunner: the real Runner. Implements contracts.interfaces.Runner.
 
 verify(case_id, patch):
   1. fresh temp copy of the case's practice app (plus the case's overlay, if any)

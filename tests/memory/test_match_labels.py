@@ -1,4 +1,4 @@
-"""#55: "match: strong" comes from vector similarity only. An exact signature hit (same error code and
+""""match: strong" comes from vector similarity only. An exact signature hit (same error code and
 operation) still surfaces a look-alike, so its conditions can refuse it, but it is never "strong"
 because of the signature. Run: uv run pytest -m atlas tests/memory"""
 
@@ -91,7 +91,7 @@ NEW_TEXT = _summary("A").startswith("duplicate key field:")
 
 
 @pytest.mark.atlas
-@pytest.mark.skipif(not NEW_TEXT, reason="needs P1's code-derived recall text (add769c) on main; see #55")
+@pytest.mark.skipif(not NEW_TEXT, reason="needs the code-derived recall text")
 def test_true_repeats_are_strong_and_look_alikes_weak(payments):
     from contracts.models import Principal
 

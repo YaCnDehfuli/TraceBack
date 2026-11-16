@@ -1,8 +1,7 @@
 """What each side promises to provide.
 
-P2 implements MemoryStore (memory/store.py). P3 implements Runner (runner/sandbox.py).
-P1's agent depends only on these interfaces, so the fakes in contracts/fakes.py can stand in
-until the real implementations land.
+memory/store.py implements MemoryStore and runner/sandbox.py implements Runner. The agent depends
+only on these interfaces, so the fakes in contracts/fakes.py can stand in for either in tests.
 """
 
 from __future__ import annotations
@@ -23,7 +22,7 @@ from contracts.models import (
 
 @runtime_checkable
 class MemoryStore(Protocol):
-    """Provided by P2, used by P1."""
+    """Implemented by the memory service, used by the agent."""
 
     def recall(
         self, principal: Principal, observations: Observations, run_id: str, k: int = 3
@@ -61,7 +60,7 @@ class MemoryStore(Protocol):
 
 @runtime_checkable
 class Runner(Protocol):
-    """Provided by P3, used by P1."""
+    """Implemented by the verification sandbox, used by the agent."""
 
     def reproduce(self, case_id: str) -> VerificationResult:
         """Run the reproduction test on the ORIGINAL code in a fresh temporary copy."""

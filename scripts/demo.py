@@ -1,8 +1,8 @@
-"""Run the demo: starts the API and the web UI on http://localhost:8000 (owner: P3).
+"""Run the demo: starts the API and the web UI on http://localhost:8000.
 
     uv run python scripts/demo.py [--port 8000]
 
-`main` must always be able to run this (plan 5.1). Keys 1-5 in the UI jump to the five beats (P3-5).
+`main` must always be able to run this. Keys 1-5 in the UI jump to the five beats.
 """
 
 from __future__ import annotations

@@ -92,7 +92,7 @@ class Observations(Contract):
 
 
 class Conditions(Contract):
-    """The fixed two-condition vocabulary (plan 4.2), filled automatically at promote time and
+    """The fixed two-condition vocabulary, filled automatically at promote time and
     checked in plain code (agent/conditions.py), never by the LLM. None = not constrained."""
 
     dup_key_field: str | None = None
@@ -105,7 +105,7 @@ class Applicability(Contract):
 
 
 class FileAnchor(Contract):
-    """Fingerprint of a file the fix touched, used for the staleness warning (plan R12)."""
+    """Fingerprint of a file the fix touched, used for the staleness warning."""
 
     path: str
     sha256: str
@@ -141,7 +141,7 @@ class MemoryCandidate(Contract):
     retrieval_text: str
     confirmed_cause: str
     resolution_summary: str
-    resolution_patch: FilePatch | None = None  # the proven fix, used to tag "from memory" lines (P1-6)
+    resolution_patch: FilePatch | None = None  # the proven fix, used to tag "from memory" lines
     applicability: Applicability
     anchors: list[FileAnchor] = Field(default_factory=list)
     expires_at: datetime
@@ -347,7 +347,7 @@ class RunView(Contract):
     prompt_version: str | None = None
 
 
-# =========================================================================== memory REST shapes (P2)
+# =========================================================================== memory REST shapes
 
 
 class Proof(Contract):
@@ -364,7 +364,7 @@ class Tombstone(Contract):
 
 
 class MemoryCard(Contract):
-    """What web/memory.js renders (plan 7.3). No IDs or scores in the main view; they go under "details"."""
+    """What web/memory.js renders. No IDs or scores in the main view; they go under "details"."""
 
     memory_id: str
     version: int
@@ -402,7 +402,7 @@ class CorrectBody(Contract):
     reason: str
 
 
-# =========================================================================== cases (P3)
+# =========================================================================== cases
 
 
 class CaseManifest(Contract):

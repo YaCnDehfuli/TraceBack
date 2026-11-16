@@ -1,4 +1,4 @@
-"""Team retention policies (guide 8.5, with the demo values from plan section 8)."""
+"""Team retention policies, with the demo values."""
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -7,7 +7,7 @@ from pymongo.database import Database
 
 HOUR = 3600
 
-# Survives judging (5:15-8:00 PM): 24 h life, 48 h max, 10 min purge grace.
+# Demo policy: 24 h life, 48 h max, 10 min purge grace (long enough to outlast a day of demos).
 DEMO_POLICY = {
     "ttlSeconds": 24 * HOUR,
     "maxLifetimeSeconds": 48 * HOUR,

@@ -1,4 +1,4 @@
-"""Correction and history (P2-7, R7), and that no retired memory ever comes back from recall.
+"""Correction and history, and that no retired memory ever comes back from recall.
 Run: uv run pytest -m atlas tests/memory"""
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ def test_correction_makes_v2_and_keeps_v1_in_history(client, mem, payments):
 
     # v1 is dropped at once (re-read guard). v2 needs the vector index to catch up: until then it is
     # found only by the exact signature lookup (score 0) and, in a database with other webhook
-    # memories, can rank below the top 3 (issue #46). Wait for it like promote callers do.
+    # memories, can rank below the top 3. Wait for it like promote callers do.
     assert mem_id not in recalled(s, payments)  # superseded never comes back
     end = time.time() + 60
     while not s.is_searchable(payments, f"{mem_id}_v2") and time.time() < end:

@@ -1,7 +1,7 @@
-"""Append-only audit log (guide 8.10). Never stores memory text.
+"""Append-only audit log. Never stores memory text.
 
 contentHash is an HMAC keyed by a secret that lives only inside the memory
-document (plan 4.5). Forgetting deletes the document and the key, so old
+document. Forgetting deletes the document and the key, so old
 hashes can no longer be linked to any content.
 """
 from __future__ import annotations

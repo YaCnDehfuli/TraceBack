@@ -1,9 +1,9 @@
 """AtlasMemoryStore: the real MemoryStore (contracts/interfaces.py). The only code that writes memories.
 
-Done: promote, is_searchable, recall, search, unscoped_search (P2-2, P2-5); record_use, forget,
-expire_now (P2-6); correct, history (P2-7); staleness (P2-10).
+Implements promote, is_searchable, recall, search, unscoped_search, record_use, forget,
+expire_now, correct, history and staleness.
 
-Rules it keeps (team guide section 8, plan 4.4 and 4.5):
+Rules it keeps:
 - recall: $vectorSearch pre-filter on tenantId, readableBy, status="active", expiresAt > now,
   embeddingVersion; exact signature lookup merged in; minimum score cutoff; re-read guard; audit
   `retrieved` / `index_lag_dropped`.
@@ -52,9 +52,9 @@ from .staleness import changed_files, proven_against
 
 NUM_CANDIDATES = 100
 VECTOR_LIMIT = 5
-# "match: strong/weak" (shown instead of a raw score) comes from the VECTOR score only (#55): an exact
+# "match: strong/weak" (shown instead of a raw score) comes from the VECTOR score only: an exact
 # signature hit (same error code + operation) still surfaces a look-alike so its conditions can refuse it,
-# but it no longer implies strong similarity. Measured with P1's code-derived recall text (add769c), Atlas
+# but it no longer implies strong similarity. Measured with the code-derived recall text, Atlas
 # scores = (1 + cosine) / 2: true repeats A/B/B2/B3/P 0.952; look-alikes D 0.939, C 0.927; best distractor 0.778.
 STRONG_MATCH = 0.945
 
@@ -141,14 +141,14 @@ class AtlasMemoryStore:
             "readableBy": [p.team_id],
             "repositoryId": d.repository_id,
             "status": "active",
-            # Describe the FIX, not the symptom (issue #17): first clause of the resolution.
+            # Describe the FIX, not the symptom: first clause of the resolution.
             "title": title or re.split(r"[:;.]", d.resolution_summary or d.retrieval_text)[0].strip()[:80],
             "retrievalText": d.retrieval_text,
             "signature": d.signature,
             "confirmedCause": d.confirmed_cause,
             "applicability": d.applicability.model_dump(by_alias=True),
             "anchors": [a.model_dump(by_alias=True) for a in d.anchors],
-            # R12: fingerprints of the touched files as they are now, i.e. the code this fix was proven on.
+            # Staleness: fingerprints of the touched files as they are now, i.e. the code this fix was proven on.
             "provenAgainst": proven_against(d.repository_id, [a.path for a in d.anchors] or [d.patch.path]),
             "resolution": {"summary": d.resolution_summary, "patch": d.patch.model_dump(by_alias=True)},
             "provenance": {
@@ -192,7 +192,7 @@ class AtlasMemoryStore:
             audit.log(
                 self.db, tenant_id=p.tenant_id, event="refused", actor=actor, run_id=v.run_id,
                 reason="no proof: verification must be passed, failed before and passed after",
-                # Facts for the refusal receipt (R11). Test names only, never memory content.
+                # Facts for the refusal receipt. Test names only, never memory content.
                 details={"status": v.status, "beforeFailed": v.before_failed, "afterPassed": v.after_passed,
                          "teamId": p.team_id, "caseId": v.case_id, "repositoryId": d.repository_id,
                          "testsPassed": v.tests_passed, "testsTotal": len(v.tests),
@@ -210,8 +210,8 @@ class AtlasMemoryStore:
     def record_use(
         self, principal: Principal, memory_id: str, version: int, run_id: str, decision: MemoryUseDecision
     ) -> MemoryOutcome | None:
-        """Record what the agent did with a recalled memory. The store decides the governance outcome
-        (guide 8.4); the agent never does. Returns that outcome for the run's memory_outcome event:
+        """Record what the agent did with a recalled memory. The store decides the governance outcome;
+        the agent never does. Returns that outcome for the run's memory_outcome event:
 
           rejected / stale                                  -> "near_miss" (memory stays active)
           used, no verification yet                         -> None   (audit "used")
@@ -401,7 +401,7 @@ class AtlasMemoryStore:
             cards.append(card)
         return cards
 
-    # ------------------------------------------------------------------ admin lifecycle (P2-6)
+    # ------------------------------------------------------------------ admin lifecycle
 
     def _owned(self, p: Principal, memory_id: str) -> dict:
         """The memory, if the caller's team may read it AND owns it. Raises LookupError (-> 404) when the
@@ -438,7 +438,7 @@ class AtlasMemoryStore:
         })
 
     def forget_for_reset(self, tenant_id: str, repositories: list[str], reason: str) -> dict:
-        """Demo/dev reset only (#67): forget every NON-seeded memory (seeded absent or false) in the given
+        """Demo/dev reset only: forget every NON-seeded memory (seeded absent or false) in the given
         repositories of one tenant, e.g. memories promoted by earlier agent runs, so a reset can't leave
         stale duplicates recallable. Same path as forget(): every version of each lineage is deleted and a
         content-free tombstone is written per version, recorded as done by policy:demo-reset (no human
@@ -475,7 +475,7 @@ class AtlasMemoryStore:
         doc.update(expiresAt=now, purgeAt=purge)
         return self.to_card(doc)
 
-    # ------------------------------------------------------------------ correction and audit (P2-7)
+    # ------------------------------------------------------------------ correction and audit
 
     def correct(self, principal: Principal, memory_id: str, excludes: list[str], reason: str) -> MemoryCard:
         """Correct WITHOUT overwriting (guide rule 5): a new version with narrowed `excludes` supersedes
@@ -545,7 +545,7 @@ class AtlasMemoryStore:
         return list(events)
 
     def staleness(self, principal: Principal, memory_id: str) -> dict | None:
-        """R12, cheap and unaudited (the UI polls it): has the code changed since this memory was
+        """Staleness, cheap and unaudited (the UI polls it): has the code changed since this memory was
         proven? None if the caller's team can't read the memory."""
         doc = self.memories.find_one({"_id": memory_id, **self.readable(principal)},
                                      {"repositoryId": 1, "provenAgainst": 1})
@@ -556,7 +556,7 @@ class AtlasMemoryStore:
                 "checked": bool(doc.get("provenAgainst"))}
 
     def refusals(self, principal: Principal, limit: int = 5) -> list[dict]:
-        """Recent writes Atlas refused for the caller's team (R11): newest first, facts only
+        """Recent writes Atlas refused for the caller's team: newest first, facts only
         (run, case, which tests failed). Nothing was stored, so there is no memory to show."""
         cur = self.db.memory_audit.find(
             {"tenantId": principal.tenant_id, "event": "refused", "details.teamId": principal.team_id},

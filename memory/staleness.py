@@ -1,4 +1,4 @@
-"""Staleness (R12, guide 8.5): a memory goes stale when the code it was proven against changes.
+"""Staleness: a memory goes stale when the code it was proven against changes.
 
 At promote time the store records `provenAgainst`: a fingerprint of each file the fix touched, as it
 is in the repository at that moment (the code the fix was verified on). Later, at read time, the

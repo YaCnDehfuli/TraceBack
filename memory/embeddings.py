@@ -1,4 +1,4 @@
-"""Voyage embeddings through Atlas AI Model APIs (P2-2).
+"""Voyage embeddings through Atlas AI Model APIs.
 
 POST {VOYAGE_BASE_URL}/embeddings  with  Authorization: Bearer {VOYAGE_API_KEY}
 body: {"input": [...], "model": EMBEDDING_MODEL, "input_type": "document" | "query"}
@@ -47,7 +47,7 @@ def embed(texts: list[str], input_type: InputType) -> list[list[float]]:
 
     key = s.voyage_api_key.get_secret_value()
     if not key:
-        raise EmbeddingError("VOYAGE_API_KEY is not set (team guide 6.3).")
+        raise EmbeddingError("VOYAGE_API_KEY is not set.")
     body = {"input": texts, "model": s.embedding_model, "input_type": input_type}
 
     last: Exception | None = None

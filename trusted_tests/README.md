@@ -1,6 +1,6 @@
-# trusted_tests (owner: P3)
+# trusted_tests
 
-Tests that decide whether a fix is verified (P3-2). They live outside anything the agent may change,
+Tests that decide whether a fix is verified. They live outside anything the agent may change,
 and the runner copies them into the sandbox read-only. The agent sees test names and assertion
 messages, never this source.
 
@@ -11,4 +11,3 @@ messages, never this source.
 5. `test_unique_index_still_present`: the unique index on the event id still exists
 6. Regression tests: normal single payments still work
 
-Short on time? Write 1, 2 and 3 first (enough for R1 and R2), the rest before R6.

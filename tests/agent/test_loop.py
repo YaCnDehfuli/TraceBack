@@ -148,7 +148,7 @@ def test_calibration_summary_reads_the_timeline():
     assert row["reads"] == ["app/webhooks.py"] and row["docs_opened"] == []
 
 
-# ---------------------------------------------------------------- P1-7 / P1-9: receipts, placebo, escalation
+# ---------------------------------------------------------------- receipts, placebo, escalation
 
 
 class _StoreSays(FakeMemoryStore):

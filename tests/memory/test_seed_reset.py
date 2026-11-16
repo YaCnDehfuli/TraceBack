@@ -1,4 +1,4 @@
-"""#67: `seed_demo.py --reset` starts the demo memory from a known state. Memories earlier agent runs
+"""`seed_demo.py --reset` starts the demo memory from a known state. Memories earlier agent runs
 promoted in the demo repositories are forgotten (every version, tombstones), unrelated repositories
 survive, a second reset is a no-op, and the canonical Earn memory comes back exactly once.
 Run: uv run pytest -m atlas tests/memory   (never against traceback_demo: it resets the database)"""

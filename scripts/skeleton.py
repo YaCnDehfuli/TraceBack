@@ -1,4 +1,4 @@
-"""Walking skeleton, rung R1 (P1-1). No LLM, no API: calls P3's runner and P2's memory directly.
+"""Walking skeleton. No LLM, no API: calls the runner and the memory service directly.
 
     reference fix for case A -> runner.verify() -> memory.promote() under Payments
     -> recall() with case B's observations: Payments must find it, Platform must find nothing
@@ -7,7 +7,7 @@
     uv run python scripts/skeleton.py --strict             # fail instead of falling back to fakes
     uv run python scripts/skeleton.py --runner fake --memory fake
 
-Done when it prints "R1 OK: Payments finds 1, Platform finds 0".
+Done when it prints "Skeleton OK: Payments finds 1, Platform finds 0".
 The real runner needs the fixture database:  docker run -d --name fixture-mongo -p 27018:27017 mongo
 """
 
@@ -41,7 +41,7 @@ RESOLUTION = (
     "again, record it with ledger.mark_replayed(event.id), return 200."
 )
 
-# Used only with --runner fake when P3's cases are not on this branch yet.
+# Used only with --runner fake when the case files are not available.
 _FALLBACK_CASES = {
     "A": {
         "caseId": "A",
@@ -89,7 +89,7 @@ def load_case(case_id: str, allow_fallback: bool) -> CaseManifest:
     if path.exists():
         return CaseManifest.model_validate(json.loads(path.read_text(encoding="utf-8")))
     if not allow_fallback:
-        raise SystemExit(f"cases/{case_id}/manifest.json not found (P3-4). Merge P3's cases or use --runner fake.")
+        raise SystemExit(f"cases/{case_id}/manifest.json not found. Use --runner fake.")
     say(f"  (cases/{case_id} not on this branch yet: using a built-in copy)")
     return CaseManifest.model_validate(_FALLBACK_CASES[case_id])
 
@@ -157,7 +157,7 @@ def wait_searchable(memory: MemoryStore, memory_id: str, timeout_s: float = 60) 
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Walking skeleton (rung R1): verify, promote, recall.")
+    parser = argparse.ArgumentParser(description="Walking skeleton: verify, promote, recall.")
     parser.add_argument("--earn", default="A", help="case whose reference fix is promoted (default A)")
     parser.add_argument("--recall", default="B", help="case whose observations are used for recall (default B)")
     parser.add_argument("--runner", choices=["auto", "local", "fake"], default="auto")
@@ -184,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
         result, faked, runner_name = FakeRunner().verify(earn.case_id, patch), True, "FakeRunner"
     if not faked and result.status == "inconclusive" and (result.detail or "").startswith("fixture database"):
         if must_be_real:
-            say(f"R1 FAILED: fixture database unreachable; {FIXTURE_HINT}")
+            say(f"Skeleton FAILED: fixture database unreachable; {FIXTURE_HINT}")
             return 1
         say(f"  (fixture database unreachable: using the fake runner. For the real one, {FIXTURE_HINT})")
         result, faked, runner_name = FakeRunner().verify(earn.case_id, patch), True, "FakeRunner"
@@ -199,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
                 say(f"   failed: {t.name}: {t.detail}")
         if result.detail:
             say(f"   detail: {result.detail}")
-        say("R1 FAILED: the reference fix is not verified, so nothing may be promoted.")
+        say("Skeleton FAILED: the reference fix is not verified, so nothing may be promoted.")
         return 1
 
     # 2. Earn: promote under Payments, then wait until vector search can see it.
@@ -218,12 +218,12 @@ def main(argv: list[str] | None = None) -> int:
         memory, memory_name, mem_faked = FakeMemoryStore(seed_example=False), "FakeMemoryStore", True
         memory_id = memory.promote(PAYMENTS, draft, result)
     except Exception as e:  # noqa: BLE001 - report any Atlas problem in one line
-        say(f"R1 FAILED: promote: {explain_memory_error(e)}")
+        say(f"Skeleton FAILED: promote: {explain_memory_error(e)}")
         return 1
     say(f"   {memory_name}: promoted {memory_id}")
     waited = wait_searchable(memory, memory_id)
     if waited is None:
-        say("R1 FAILED: the memory never became searchable within 60 s (vector index not ready?).")
+        say("Skeleton FAILED: the memory never became searchable within 60 s (vector index not ready?).")
         return 1
     say(f"   searchable after {waited:.1f} s")
 
@@ -234,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         payments_hits = memory.recall(PAYMENTS, obs_reuse, run_id=new_id("run"))
         platform_hits = memory.recall(PLATFORM, obs_reuse, run_id=new_id("run"))
     except Exception as e:  # noqa: BLE001
-        say(f"R1 FAILED: recall: {explain_memory_error(e)}")
+        say(f"Skeleton FAILED: recall: {explain_memory_error(e)}")
         return 1
     say(f"   Payments finds {len(payments_hits)}; Platform finds {len(platform_hits)}")
     if payments_hits:
@@ -246,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
     ok = len(payments_hits) >= 1 and not platform_hits
     uses_fakes = faked or mem_faked or args.runner == "fake" or args.memory == "fake"
     say(
-        f"R1 {'OK' if ok else 'FAILED'}: Payments finds {len(payments_hits)}, Platform finds {len(platform_hits)}"
+        f"Skeleton {'OK' if ok else 'FAILED'}: Payments finds {len(payments_hits)}, Platform finds {len(platform_hits)}"
         + ("   [some parts were fakes]" if uses_fakes else "")
     )
     return 0 if ok else 1

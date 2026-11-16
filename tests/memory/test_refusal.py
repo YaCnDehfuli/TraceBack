@@ -1,4 +1,4 @@
-"""R11: "Memory refused: no proof." Atlas refuses a memory whose fix failed verification, the refusal
+""""Memory refused: no proof." Atlas refuses a memory whose fix failed verification, the refusal
 is recorded with the failing tests (no content), and the team can see it. Run: uv run pytest -m atlas"""
 
 from __future__ import annotations

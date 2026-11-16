@@ -69,4 +69,4 @@ def test_walking_skeleton_with_fakes(capsys):
     skeleton = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(skeleton)
     assert skeleton.main(["--runner", "fake", "--memory", "fake"]) == 0
-    assert "R1 OK: Payments finds 1, Platform finds 0" in capsys.readouterr().out
+    assert "Skeleton OK: Payments finds 1, Platform finds 0" in capsys.readouterr().out

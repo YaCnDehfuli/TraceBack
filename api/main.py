@@ -1,4 +1,4 @@
-"""FastAPI app: our routes, P2's memory router, and the web UI served from web/.
+"""FastAPI app: incident and run routes, the memory router, and the web UI served from web/.
 
 uv run uvicorn api.main:app --reload --port 8000     ->  http://localhost:8000
 """

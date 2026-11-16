@@ -1,5 +1,5 @@
 """Create collections, the memories validator, the vector index, the TTL index and the other indexes.
-Safe to run twice (owner: P2, P2-1; team guide 8.7).
+Safe to run twice.
 
     uv run python scripts/atlas_setup.py --db traceback_p2
     uv run python scripts/atlas_setup.py --all          # every team database

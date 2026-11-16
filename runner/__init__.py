@@ -1,1 +1,1 @@
-"""The verification sandbox (owner: P3). The real Runner is runner.sandbox.LocalRunner."""
+"""The verification sandbox. The real Runner is runner.sandbox.LocalRunner."""
